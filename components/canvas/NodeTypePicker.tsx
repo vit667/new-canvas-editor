@@ -1,0 +1,110 @@
+"use client"
+
+import { cn } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Server, User, ShoppingBag, BarChart2, GitBranch, StickyNote } from 'lucide-react'
+
+export type PickableNodeType = 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note'
+
+const NODE_TYPE_OPTIONS = [
+  {
+    type: 'text' as PickableNodeType,
+    label: 'Система',
+    description: 'Сервер, сервис, компонент инфраструктуры',
+    icon: Server,
+    bg: 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-600',
+    iconBg: 'bg-zinc-200 dark:bg-zinc-700',
+    iconColor: 'text-zinc-600 dark:text-zinc-300',
+  },
+  {
+    type: 'person' as PickableNodeType,
+    label: 'Персона',
+    description: 'Пользователь, сотрудник, контакт',
+    icon: User,
+    bg: 'bg-blue-50 hover:bg-blue-100 border-blue-200 dark:bg-blue-950 dark:hover:bg-blue-900 dark:border-blue-800',
+    iconBg: 'bg-blue-100 dark:bg-blue-900',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+  },
+  {
+    type: 'product-card' as PickableNodeType,
+    label: 'Карточка товара',
+    description: 'Продукт, товар, SKU с ценой и статусом',
+    icon: ShoppingBag,
+    bg: 'bg-orange-50 hover:bg-orange-100 border-orange-200 dark:bg-orange-950 dark:hover:bg-orange-900 dark:border-orange-800',
+    iconBg: 'bg-orange-100 dark:bg-orange-900',
+    iconColor: 'text-orange-600 dark:text-orange-400',
+  },
+  {
+    type: 'stat-card' as PickableNodeType,
+    label: 'Карточка статистики',
+    description: 'Метрика, KPI, статистический показатель',
+    icon: BarChart2,
+    bg: 'bg-green-50 hover:bg-green-100 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:border-green-800',
+    iconBg: 'bg-green-100 dark:bg-green-900',
+    iconColor: 'text-green-600 dark:text-green-400',
+  },
+  {
+    type: 'routing-rule' as PickableNodeType,
+    label: 'Правило маршрутизации',
+    description: 'Firewall, NAT, routing rule',
+    icon: GitBranch,
+    bg: 'bg-red-50 hover:bg-red-100 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800',
+    iconBg: 'bg-red-100 dark:bg-red-900',
+    iconColor: 'text-red-600 dark:text-red-400',
+  },
+  {
+    type: 'note' as PickableNodeType,
+    label: 'Заметка',
+    description: 'Текстовая заметка, комментарий, документация',
+    icon: StickyNote,
+    bg: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 dark:bg-yellow-950 dark:hover:bg-yellow-900 dark:border-yellow-800',
+    iconBg: 'bg-yellow-100 dark:bg-yellow-900',
+    iconColor: 'text-yellow-600 dark:text-yellow-400',
+  },
+]
+
+interface NodeTypePickerProps {
+  isOpen: boolean
+  onClose: () => void
+  onSelect: (type: PickableNodeType) => void
+}
+
+export function NodeTypePicker({ isOpen, onClose, onSelect }: NodeTypePickerProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[560px]">
+        <DialogHeader>
+          <DialogTitle>Выберите тип узла</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3 py-2">
+          {NODE_TYPE_OPTIONS.map((opt) => {
+            const Icon = opt.icon
+            return (
+              <button
+                key={opt.type}
+                onClick={() => { onSelect(opt.type); onClose(); }}
+                className={cn(
+                  'flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-all cursor-pointer',
+                  opt.bg
+                )}
+              >
+                <div className={cn('flex-shrink-0 w-9 h-9 rounded-md flex items-center justify-center', opt.iconBg)}>
+                  <Icon className={cn('w-5 h-5', opt.iconColor)} />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-foreground">{opt.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{opt.description}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
