@@ -45,6 +45,7 @@ import CustomEdge from './edges/CustomEdge';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
 import EdgeEditor from './EdgeEditor';
 import { useCanvasStore } from '@/store/canvasStore';
+import type { ServiceItem } from '@/types/canvas';
 
 const nodeTypes = {
   text: TextNode,
@@ -1194,72 +1195,83 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       return;
     }
 
-    // Даем время для рендеринга всех edges перед клонированием
     setTimeout(() => {
-      // Клонируем весь wrapper вместо только viewport для сохранения всех SVG структур
+      // Шаг 1: помечаем кнопки сервисов data-service атрибутом перед клонированием
+      const taggedButtons: HTMLElement[] = [];
+
+      nodes.forEach(node => {
+        const services = (node.data?.services as ServiceItem[]) || [];
+        if (!services.length) return;
+
+        const nodeEl = reactFlowWrapper.querySelector(`.react-flow__node[data-id="${node.id}"]`);
+        if (!nodeEl) return;
+
+        const allButtons = Array.from(nodeEl.querySelectorAll('button')) as HTMLElement[];
+
+        services.forEach((service: ServiceItem) => {
+          const matchingBtn = allButtons.find(btn => {
+            if (btn.hasAttribute('data-service')) return false;
+            const firstSpan = btn.querySelector('span');
+            return firstSpan?.textContent?.trim() === service.name;
+          });
+
+          if (matchingBtn) {
+            matchingBtn.setAttribute('data-service', JSON.stringify(service));
+            taggedButtons.push(matchingBtn);
+          }
+        });
+      });
+
+      // Шаг 2: клонируем DOM
       const content = reactFlowWrapper.cloneNode(true) as HTMLElement;
 
-    // Удаляем элементы UI
-    content.querySelectorAll('.react-flow__background').forEach(el => el.remove());
-    content.querySelectorAll('.react-flow__minimap').forEach(el => el.remove());
-    content.querySelectorAll('.react-flow__controls').forEach(el => el.remove());
-    content.querySelectorAll('.react-flow__panel').forEach(el => el.remove());
+      // Шаг 3: убираем пометки с оригинального DOM
+      taggedButtons.forEach(btn => btn.removeAttribute('data-service'));
 
-    // Находим viewport в клонированном контенте
-    const clonedViewport = content.querySelector('.react-flow__viewport') as HTMLElement;
-    if (!clonedViewport) return;
+      // Удаляем элементы UI из клона
+      content.querySelectorAll('.react-flow__background').forEach(el => el.remove());
+      content.querySelectorAll('.react-flow__minimap').forEach(el => el.remove());
+      content.querySelectorAll('.react-flow__controls').forEach(el => el.remove());
+      content.querySelectorAll('.react-flow__panel').forEach(el => el.remove());
 
-    // Получаем границы всех узлов для центрирования
-    const nodesBounds = getNodesBounds(nodes);
-    const padding = 100;
-    const x = nodesBounds.x - padding;
-    const y = nodesBounds.y - padding;
+      const clonedViewport = content.querySelector('.react-flow__viewport') as HTMLElement;
+      if (!clonedViewport) return;
 
-    // Применяем трансформацию для центрирования на viewport
-    clonedViewport.style.transform = `translate(${-x}px, ${-y}px) scale(1)`;
+      const nodesBounds = getNodesBounds(nodes);
+      const padding = 100;
+      const x = nodesBounds.x - padding;
+      const y = nodesBounds.y - padding;
 
-    // Устанавливаем размеры на контейнер
-    content.style.width = `${nodesBounds.width + padding * 2}px`;
-    content.style.height = `${nodesBounds.height + padding * 2}px`;
-    content.style.position = 'relative';
-    content.style.overflow = 'visible';
+      clonedViewport.style.transform = `translate(${-x}px, ${-y}px) scale(1)`;
+      content.style.width = `${nodesBounds.width + padding * 2}px`;
+      content.style.height = `${nodesBounds.height + padding * 2}px`;
+      content.style.position = 'relative';
+      content.style.overflow = 'visible';
 
-    // Проверяем, что edges присутствуют
-    const edgesContainer = content.querySelector('.react-flow__edges');
-    const edgePaths = content.querySelectorAll('.react-flow__edge');
-    console.log(`Экспорт HTML: найдено ${edgePaths.length} edges из ${edges.length} в данных`);
+      // Собираем все CSS стили
+      const allCSS = Array.from(document.styleSheets)
+        .map((styleSheet) => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .filter((cssText) => !cssText.includes('@media print'))
+              .join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
 
-    if (edgesContainer) {
-      console.log('SVG edges контейнер найден:', edgesContainer);
-    } else {
-      console.warn('SVG edges контейнер не найден!');
-    }
+      const dateStr = new Date().toISOString().split('T')[0];
 
-    // Собираем все CSS стили
-    const allCSS = Array.from(document.styleSheets)
-      .map((styleSheet) => {
-        try {
-          return Array.from(styleSheet.cssRules)
-            .map((rule) => rule.cssText)
-            .filter((cssText) => !cssText.includes('@media print'))
-            .join('\n');
-        } catch (e) {
-          // Пропускаем внешние стили (CORS)
-          return '';
-        }
-      })
-      .join('\n');
-
-    // Генерируем HTML
-    const html = `<!DOCTYPE html>
+      const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Canvas Export - ${new Date().toISOString().split('T')[0]}</title>
+  <title>Canvas Export - ${dateStr}</title>
   <style>
 ${allCSS}
 
-/* Дополнительные стили для экспорта */
 body {
   margin: 0;
   padding: 20px;
@@ -1277,11 +1289,8 @@ body {
   overflow: visible;
 }
 
-.react-flow__viewport {
-  overflow: visible !important;
-}
+.react-flow__viewport { overflow: visible !important; }
 
-/* Обеспечиваем правильное отображение edges */
 .react-flow__edges {
   position: absolute;
   z-index: 10;
@@ -1289,9 +1298,7 @@ body {
   overflow: visible !important;
 }
 
-.react-flow__edge {
-  pointer-events: all;
-}
+.react-flow__edge { pointer-events: all; }
 
 svg.react-flow__edges {
   position: absolute;
@@ -1302,76 +1309,325 @@ svg.react-flow__edges {
   overflow: visible !important;
 }
 
-/* Кнопки для управления */
-.export-controls {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 1000;
+/* Кнопки сервисов — кликабельны */
+[data-service] {
+  cursor: pointer !important;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+[data-service]:hover {
+  opacity: 0.82;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18) !important;
 }
 
-.export-controls button {
-  padding: 10px 20px;
+/* Попап */
+.sp-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.sp-overlay.open { display: flex; }
+
+.sp-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+  position: relative;
+  animation: sp-in 0.15s ease;
+}
+
+@keyframes sp-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.sp-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: none; border: none;
+  font-size: 18px; line-height: 1;
+  cursor: pointer; color: #6b7280;
+  padding: 4px 6px; border-radius: 6px;
+}
+.sp-close:hover { background: #f3f4f6; }
+
+.sp-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 18px 0;
+  padding-right: 32px;
+}
+
+.sp-field { margin-bottom: 14px; }
+
+.sp-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-code {
+  flex: 1;
+  background: #f3f4f6;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.sp-code-dark {
+  flex: 1;
+  background: #111827;
+  color: #4ade80;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.sp-text {
+  font-size: 13px;
+  color: #4b5563;
+  background: #f9fafb;
+  padding: 9px 12px;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+
+.sp-copy {
+  flex-shrink: 0;
+  padding: 5px 7px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  border-radius: 6px;
+  color: #6b7280;
   font-size: 14px;
+  line-height: 1;
+}
+.sp-copy:hover { background: #f3f4f6; }
+.sp-copy.copied { color: #16a34a; border-color: #16a34a; }
+
+.sp-cfield {
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  margin-bottom: 7px;
+}
+.sp-cfield-key {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.sp-cfield-val {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-cfield-text {
+  flex: 1;
+  font-size: 13px;
+  color: #4b5563;
+  word-break: break-all;
+}
+
+/* Панель управления */
+.export-controls {
+  position: fixed;
+  top: 20px; right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+}
+.export-controls button {
+  padding: 9px 18px;
+  font-size: 13px;
   cursor: pointer;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   background: #3b82f6;
   color: white;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
 }
-
-.export-controls button:hover {
-  background: #2563eb;
-}
+.export-controls button:hover { background: #2563eb; }
 
 @media print {
-  body {
-    background: white;
-    padding: 0;
-  }
-  .export-controls {
-    display: none;
-  }
-  .export-container {
-    box-shadow: none;
-  }
+  body { background: white; padding: 0; }
+  .export-controls, .sp-overlay { display: none !important; }
+  .export-container { box-shadow: none; }
 }
   </style>
 </head>
 <body class="${document.body.className}">
+
   <div class="export-controls">
-    <button onclick="window.print()">Печать / Сохранить как PDF</button>
+    <button onclick="window.print()">Печать / PDF</button>
     <button onclick="downloadHTML()">Скачать HTML</button>
+    <button onclick="downloadZIP()">Скачать ZIP</button>
   </div>
+
+  <!-- Попап сервиса -->
+  <div class="sp-overlay" id="spOverlay" onclick="closeOnBg(event)">
+    <div class="sp-modal">
+      <button class="sp-close" onclick="closePopup()" title="Закрыть">✕</button>
+      <div class="sp-title" id="spTitle"></div>
+      <div id="spBody"></div>
+    </div>
+  </div>
+
   <div class="export-container">
     ${content.outerHTML}
   </div>
+
   <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('[data-service]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          try { showPopup(JSON.parse(btn.getAttribute('data-service'))); } catch (_) {}
+        });
+      });
+    });
+
+    function esc(str) {
+      var d = document.createElement('div');
+      d.appendChild(document.createTextNode(String(str)));
+      return d.innerHTML;
+    }
+
+    function copyBtn(text) {
+      return '<button class="sp-copy" onclick="doCopy(this,' + JSON.stringify(text) + ')">⎘</button>';
+    }
+
+    function doCopy(btn, text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(function () { fbCopy(text); });
+      } else { fbCopy(text); }
+      btn.textContent = '✓';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = '⎘'; btn.classList.remove('copied'); }, 1500);
+    }
+
+    function fbCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+
+    function showPopup(s) {
+      document.getElementById('spTitle').textContent = s.name || 'Сервис';
+      var h = '';
+      if (s.port) {
+        h += '<div class="sp-field"><div class="sp-label">Порт</div>' +
+             '<div class="sp-row"><code class="sp-code">' + esc(s.port) + '</code>' + copyBtn(s.port) + '</div></div>';
+      }
+      if (s.description) {
+        h += '<div class="sp-field"><div class="sp-label">Описание</div>' +
+             '<div class="sp-text">' + esc(s.description) + '</div></div>';
+      }
+      if (s.location) {
+        h += '<div class="sp-field"><div class="sp-label">Расположение</div>' +
+             '<div class="sp-row"><code class="sp-code">' + esc(s.location) + '</code>' + copyBtn(s.location) + '</div></div>';
+      }
+      if (s.startCommand) {
+        h += '<div class="sp-field"><div class="sp-label">Команда запуска</div>' +
+             '<div class="sp-row"><code class="sp-code-dark">' + esc(s.startCommand) + '</code>' + copyBtn(s.startCommand) + '</div></div>';
+      }
+      if (s.customFields && s.customFields.length) {
+        var fields = s.customFields.filter(function (f) { return f.key; });
+        if (fields.length) {
+          h += '<div class="sp-field"><div class="sp-label">Кастомные поля</div>';
+          fields.forEach(function (f) {
+            h += '<div class="sp-cfield"><div class="sp-cfield-key">' + esc(f.key) + '</div>';
+            if (f.value) {
+              h += '<div class="sp-cfield-val"><span class="sp-cfield-text">' + esc(f.value) + '</span>' + copyBtn(f.value) + '</div>';
+            }
+            h += '</div>';
+          });
+          h += '</div>';
+        }
+      }
+      document.getElementById('spBody').innerHTML = h;
+      document.getElementById('spOverlay').classList.add('open');
+    }
+
+    function closePopup() { document.getElementById('spOverlay').classList.remove('open'); }
+    function closeOnBg(e) { if (e.target === document.getElementById('spOverlay')) closePopup(); }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePopup(); });
+
+    function getCleanHTML() {
+      var clone = document.documentElement.cloneNode(true);
+      clone.querySelector('.export-controls') && clone.querySelector('.export-controls').remove();
+      return '<!DOCTYPE html>' + clone.outerHTML;
+    }
+
     function downloadHTML() {
-      const htmlContent = document.documentElement.outerHTML;
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = 'canvas-${new Date().toISOString().split('T')[0]}.html';
-      link.href = url;
-      link.click();
+      var blob = new Blob([getCleanHTML()], { type: 'text/html' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.download = 'canvas-${dateStr}.html'; a.href = url; a.click();
       URL.revokeObjectURL(url);
     }
-  </script>
+
+    async function downloadZIP() {
+      var btn = event.currentTarget;
+      btn.textContent = 'Загрузка...'; btn.disabled = true;
+      try {
+        if (!window.JSZip) {
+          await new Promise(function (res, rej) {
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            s.onload = res; s.onerror = rej;
+            document.head.appendChild(s);
+          });
+        }
+        var zip = new JSZip();
+        zip.file('index.html', getCleanHTML());
+        var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.download = 'canvas-${dateStr}.zip'; a.href = url; a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        alert('Ошибка создания ZIP: ' + e.message);
+      } finally {
+        btn.textContent = 'Скачать ZIP'; btn.disabled = false;
+      }
+    }
+  <\/script>
 </body>
 </html>`;
 
-      // Открываем HTML в новом окне
       const newWindow = window.open();
       if (newWindow) {
         newWindow.document.write(html);
         newWindow.document.close();
       }
-    }, 100); // Закрываем setTimeout
+    }, 100);
   }, [nodes, edges]);
 
   const handleImportClick = useCallback(() => {
