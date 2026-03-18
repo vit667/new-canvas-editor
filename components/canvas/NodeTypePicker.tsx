@@ -7,9 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Server, User, ShoppingBag, BarChart2, GitBranch, StickyNote } from 'lucide-react'
+import { Server, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
 
-export type PickableNodeType = 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note'
+export type PickableNodeType = 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
 
 const NODE_TYPE_OPTIONS = [
   {
@@ -51,11 +51,11 @@ const NODE_TYPE_OPTIONS = [
   {
     type: 'routing-rule' as PickableNodeType,
     label: 'Правило маршрутизации',
-    description: 'Firewall, NAT, routing rule',
+    description: 'Логика маршрутизации, условия и действия',
     icon: GitBranch,
-    bg: 'bg-red-50 hover:bg-red-100 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800',
-    iconBg: 'bg-red-100 dark:bg-red-900',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bg: 'bg-purple-50 hover:bg-purple-100 border-purple-200 dark:bg-purple-950 dark:hover:bg-purple-900 dark:border-purple-800',
+    iconBg: 'bg-purple-100 dark:bg-purple-900',
+    iconColor: 'text-purple-600 dark:text-purple-400',
   },
   {
     type: 'note' as PickableNodeType,
@@ -65,6 +65,24 @@ const NODE_TYPE_OPTIONS = [
     bg: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 dark:bg-yellow-950 dark:hover:bg-yellow-900 dark:border-yellow-800',
     iconBg: 'bg-yellow-100 dark:bg-yellow-900',
     iconColor: 'text-yellow-600 dark:text-yellow-400',
+  },
+  {
+    type: 'risk' as PickableNodeType,
+    label: 'Риск',
+    description: 'Риск, угроза, проблема с вероятностью и влиянием',
+    icon: AlertTriangle,
+    bg: 'bg-red-50 hover:bg-red-100 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800',
+    iconBg: 'bg-red-100 dark:bg-red-900',
+    iconColor: 'text-red-600 dark:text-red-400',
+  },
+  {
+    type: 'group' as PickableNodeType,
+    label: 'Группа',
+    description: 'Группировка нод, категория, контейнер',
+    icon: Folder,
+    bg: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 dark:border-indigo-800',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900',
+    iconColor: 'text-indigo-600 dark:text-indigo-400',
   },
 ]
 

@@ -1,34 +1,27 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
-import { ArrowDown, Shield, ShieldOff, Forward } from 'lucide-react'
+import { GitBranch, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
 const actionConfig = {
-  allow: { label: 'РАЗРЕШИТЬ', class: 'bg-green-100 text-green-700 border-green-300', Icon: Shield },
-  deny: { label: 'ЗАПРЕТИТЬ', class: 'bg-red-100 text-red-700 border-red-300', Icon: ShieldOff },
-  forward: { label: 'ПЕРЕСЛАТЬ', class: 'bg-blue-100 text-blue-700 border-blue-300', Icon: Forward },
-}
-
-const protocolColors: Record<string, string> = {
-  tcp: 'bg-purple-100 text-purple-700',
-  udp: 'bg-cyan-100 text-cyan-700',
-  icmp: 'bg-yellow-100 text-yellow-700',
-  any: 'bg-gray-100 text-gray-600',
+  route: { label: 'МАРШРУТ', class: 'bg-blue-100 text-blue-700 border-blue-300', Icon: ArrowRight },
+  accept: { label: 'ПРИНЯТЬ', class: 'bg-green-100 text-green-700 border-green-300', Icon: CheckCircle },
+  reject: { label: 'ОТКЛОНИТЬ', class: 'bg-red-100 text-red-700 border-red-300', Icon: XCircle },
 }
 
 function RoutingRuleNode({ data, selected }: NodeProps) {
-  const action = (data.action as keyof typeof actionConfig) || 'allow'
-  const { label: actionLabel, class: actionClass, Icon: ActionIcon } = actionConfig[action] || actionConfig.allow
-  const protocol = (data.protocol as string) || 'tcp'
-
-  const srcAddr = [data.srcIp, data.srcPort].filter(Boolean).join(':') || 'any'
-  const dstAddr = [data.dstIp, data.dstPort].filter(Boolean).join(':') || 'any'
+  const action = (data.action as keyof typeof actionConfig) || 'route'
+  const { label: actionLabel, class: actionClass, Icon: ActionIcon } = actionConfig[action] || actionConfig.route
+  
+  const condition = data.condition || 'Условие не задано'
+  const destination = data.destination || 'Пункт назначения'
+  const priority = data.priority || '—'
 
   return (
     <div
       className={cn(
-        'rounded-lg border-2 min-w-[220px] max-w-[270px] bg-white overflow-hidden transition-all',
-        'border-red-200',
+        'rounded-lg border-2 min-w-[240px] max-w-[300px] bg-white overflow-hidden transition-all',
+        'border-purple-200',
         selected && 'ring-2 ring-blue-500 ring-offset-2'
       )}
     >
@@ -42,33 +35,40 @@ function RoutingRuleNode({ data, selected }: NodeProps) {
       <Handle type="source" position={Position.Right} id="right-source" />
 
       {/* Header */}
-      <div className="bg-red-50 px-3 py-2 border-b border-red-100 flex items-center justify-between gap-2">
-        <span className="font-semibold text-sm truncate">{data.label || 'Правило'}</span>
+      <div className="bg-purple-50 px-3 py-2 border-b border-purple-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <GitBranch className="w-4 h-4 text-purple-600 flex-shrink-0" />
+          <span className="font-semibold text-sm truncate">{data.label || 'Маршрутизация'}</span>
+        </div>
         <span className={cn('text-xs px-2 py-0.5 rounded border font-mono font-bold flex-shrink-0', actionClass)}>
           {actionLabel}
         </span>
       </div>
 
-      {/* Route */}
-      <div className="px-3 py-3 space-y-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700 truncate flex-1 text-center">
-            {srcAddr}
+      {/* Content */}
+      <div className="px-3 py-3 space-y-2">
+        {/* Priority */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-gray-500">Приоритет:</span>
+          <span className="font-mono font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+            {priority}
           </span>
         </div>
 
-        <div className="flex items-center justify-center gap-2">
-          <ArrowDown className="w-3.5 h-3.5 text-gray-400" />
-          <span className={cn('text-xs px-2 py-0.5 rounded font-medium', protocolColors[protocol] || protocolColors.any)}>
-            {protocol.toUpperCase()}
-          </span>
-          <ArrowDown className="w-3.5 h-3.5 text-gray-400" />
+        {/* Condition */}
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-gray-600">Условие:</span>
+          <div className="text-xs bg-gray-50 p-2 rounded border border-gray-200 text-gray-700 line-clamp-2">
+            {condition}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700 truncate flex-1 text-center">
-            {dstAddr}
-          </span>
+        {/* Destination */}
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-gray-600">Маршрут:</span>
+          <div className="text-xs bg-purple-50 p-2 rounded border border-purple-200 text-purple-700 font-medium truncate">
+            {destination}
+          </div>
         </div>
       </div>
     </div>

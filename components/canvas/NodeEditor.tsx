@@ -59,12 +59,18 @@ function NodeEditor({ node, isOpen, onClose, onSave }: NodeEditorProps) {
   const [trendValue, setTrendValue] = useState('');
   const [statDescription, setStatDescription] = useState('');
   // routing-rule
-  const [srcIp, setSrcIp] = useState('');
-  const [srcPort, setSrcPort] = useState('');
-  const [dstIp, setDstIp] = useState('');
-  const [dstPort, setDstPort] = useState('');
-  const [protocol, setProtocol] = useState('tcp');
-  const [ruleAction, setRuleAction] = useState('allow');
+  const [condition, setCondition] = useState('');
+  const [destination, setDestination] = useState('');
+  const [priority, setPriority] = useState('');
+  const [ruleAction, setRuleAction] = useState('route');
+  // risk
+  const [probability, setProbability] = useState('');
+  const [impact, setImpact] = useState('');
+  const [severity, setSeverity] = useState('medium');
+  const [mitigation, setMitigation] = useState('');
+  // group
+  const [itemCount, setItemCount] = useState('');
+  const [groupType, setGroupType] = useState('');
 
   useEffect(() => {
     if (node) {
@@ -94,12 +100,18 @@ function NodeEditor({ node, isOpen, onClose, onSave }: NodeEditorProps) {
       setTrendValue(node.data.trendValue || '');
       setStatDescription(node.data.description || '');
       // routing-rule
-      setSrcIp(node.data.srcIp || '');
-      setSrcPort(node.data.srcPort || '');
-      setDstIp(node.data.dstIp || '');
-      setDstPort(node.data.dstPort || '');
-      setProtocol(node.data.protocol || 'tcp');
-      setRuleAction(node.data.action || 'allow');
+      setCondition(node.data.condition || '');
+      setDestination(node.data.destination || '');
+      setPriority(node.data.priority || '');
+      setRuleAction(node.data.action || 'route');
+      // risk
+      setProbability(node.data.probability || '');
+      setImpact(node.data.impact || '');
+      setSeverity(node.data.severity || 'medium');
+      setMitigation(node.data.mitigation || '');
+      // group
+      setItemCount(node.data.itemCount || '');
+      setGroupType(node.data.groupType || '');
     }
   }, [node]);
 
@@ -132,12 +144,20 @@ function NodeEditor({ node, isOpen, onClose, onSave }: NodeEditorProps) {
       saveData.description = statDescription;
     }
     if (node?.type === 'routing-rule') {
-      saveData.srcIp = srcIp;
-      saveData.srcPort = srcPort;
-      saveData.dstIp = dstIp;
-      saveData.dstPort = dstPort;
-      saveData.protocol = protocol;
+      saveData.condition = condition;
+      saveData.destination = destination;
+      saveData.priority = priority;
       saveData.action = ruleAction;
+    }
+    if (node?.type === 'risk') {
+      saveData.probability = probability;
+      saveData.impact = impact;
+      saveData.severity = severity;
+      saveData.mitigation = mitigation;
+    }
+    if (node?.type === 'group') {
+      saveData.itemCount = itemCount;
+      saveData.groupType = groupType;
     }
     onSave(saveData);
   };
@@ -420,60 +440,142 @@ function NodeEditor({ node, isOpen, onClose, onSave }: NodeEditorProps) {
           {/* Поля для routing-rule */}
           {node.type === 'routing-rule' && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="srcIp">Источник (IP/подсеть)</Label>
-                  <Input id="srcIp" value={srcIp} onChange={(e) => setSrcIp(e.target.value)} placeholder="0.0.0.0/0" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="srcPort">Порт источника</Label>
-                  <Input id="srcPort" value={srcPort} onChange={(e) => setSrcPort(e.target.value)} placeholder="any" />
+              <div className="grid gap-2">
+                <Label htmlFor="priority">Приоритет</Label>
+                <Input 
+                  id="priority" 
+                  value={priority} 
+                  onChange={(e) => setPriority(e.target.value)} 
+                  placeholder="1, 10, 100..." 
+                  type="number"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="condition">Условие маршрутизации</Label>
+                <Textarea 
+                  id="condition" 
+                  value={condition} 
+                  onChange={(e) => setCondition(e.target.value)} 
+                  placeholder="Например: user.role == 'admin' AND request.path.startsWith('/api')"
+                  className="min-h-[80px] text-sm font-mono"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="destination">Маршрут назначения</Label>
+                <Input 
+                  id="destination" 
+                  value={destination} 
+                  onChange={(e) => setDestination(e.target.value)} 
+                  placeholder="Например: api-server-1, load-balancer, fallback-service"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Действие</Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'route', label: 'Маршрут' },
+                    { value: 'accept', label: 'Принять' },
+                    { value: 'reject', label: 'Отклонить' },
+                  ].map((a) => (
+                    <button
+                      key={a.value}
+                      type="button"
+                      onClick={() => setRuleAction(a.value)}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-all ${ruleAction === a.value ? 'bg-primary text-primary-foreground border-primary' : 'border-muted-foreground/30 hover:border-muted-foreground'}`}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
                 </div>
               </div>
+            </>
+          )}
+
+          {/* Поля для risk */}
+          {node.type === 'risk' && (
+            <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="dstIp">Назначение (IP/подсеть)</Label>
-                  <Input id="dstIp" value={dstIp} onChange={(e) => setDstIp(e.target.value)} placeholder="10.0.0.0/8" />
+                  <Label htmlFor="probability">Вероятность (1-5)</Label>
+                  <Input 
+                    id="probability" 
+                    value={probability} 
+                    onChange={(e) => setProbability(e.target.value)} 
+                    placeholder="1-5"
+                    type="number"
+                    min="1"
+                    max="5"
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="dstPort">Порт назначения</Label>
-                  <Input id="dstPort" value={dstPort} onChange={(e) => setDstPort(e.target.value)} placeholder="80, 443" />
+                  <Label htmlFor="impact">Влияние (1-5)</Label>
+                  <Input 
+                    id="impact" 
+                    value={impact} 
+                    onChange={(e) => setImpact(e.target.value)} 
+                    placeholder="1-5"
+                    type="number"
+                    min="1"
+                    max="5"
+                  />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label>Уровень серьёзности</Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'critical', label: 'Критичный' },
+                    { value: 'high', label: 'Высокий' },
+                    { value: 'medium', label: 'Средний' },
+                    { value: 'low', label: 'Низкий' },
+                  ].map((s) => (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => setSeverity(s.value)}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-all ${severity === s.value ? 'bg-primary text-primary-foreground border-primary' : 'border-muted-foreground/30 hover:border-muted-foreground'}`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="mitigation">План смягчения</Label>
+                <Textarea 
+                  id="mitigation" 
+                  value={mitigation} 
+                  onChange={(e) => setMitigation(e.target.value)} 
+                  placeholder="Описание плана смягчения риска..."
+                  className="min-h-[80px] text-sm"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Поля для group */}
+          {node.type === 'group' && (
+            <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label>Протокол</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['tcp', 'udp', 'icmp', 'any'].map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setProtocol(p)}
-                        className={`px-3 py-1.5 text-xs rounded-full border transition-all uppercase font-mono ${protocol === p ? 'bg-primary text-primary-foreground border-primary' : 'border-muted-foreground/30 hover:border-muted-foreground'}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
+                  <Label htmlFor="itemCount">Количество элементов</Label>
+                  <Input 
+                    id="itemCount" 
+                    value={itemCount} 
+                    onChange={(e) => setItemCount(e.target.value)} 
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Действие</Label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 'allow', label: 'Разрешить' },
-                      { value: 'deny', label: 'Запретить' },
-                      { value: 'forward', label: 'Переслать' },
-                    ].map((a) => (
-                      <button
-                        key={a.value}
-                        type="button"
-                        onClick={() => setRuleAction(a.value)}
-                        className={`px-3 py-1.5 text-xs rounded-full border transition-all ${ruleAction === a.value ? 'bg-primary text-primary-foreground border-primary' : 'border-muted-foreground/30 hover:border-muted-foreground'}`}
-                      >
-                        {a.label}
-                      </button>
-                    ))}
-                  </div>
+                  <Label htmlFor="groupType">Тип группы</Label>
+                  <Input 
+                    id="groupType" 
+                    value={groupType} 
+                    onChange={(e) => setGroupType(e.target.value)} 
+                    placeholder="Например: Отдел, Проект, Команда"
+                  />
                 </div>
               </div>
             </>

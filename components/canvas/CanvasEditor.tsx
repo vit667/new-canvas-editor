@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -37,6 +39,7 @@ import PersonNode from './nodes/PersonNode';
 import ProductCardNode from './nodes/ProductCardNode';
 import StatCardNode from './nodes/StatCardNode';
 import RoutingRuleNode from './nodes/RoutingRuleNode';
+import RiskNode from './nodes/RiskNode';
 import NoteNode from './nodes/NoteNode';
 import CustomEdge from './edges/CustomEdge';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
@@ -53,6 +56,7 @@ const nodeTypes = {
   'product-card': ProductCardNode,
   'stat-card': StatCardNode,
   'routing-rule': RoutingRuleNode,
+  risk: RiskNode,
   note: NoteNode,
 };
 
@@ -488,7 +492,9 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       person: { label: 'Новый контакт', role: '', email: '', phone: '', color: 'default' },
       'product-card': { label: 'Новый товар', description: '', price: '', currency: '₽', status: 'available', category: '', color: 'default' },
       'stat-card': { label: 'Метрика', value: '0', unit: '', trend: 'neutral', trendValue: '', description: '', color: 'default' },
-      'routing-rule': { label: 'Новое правило', srcIp: '', srcPort: '', dstIp: '', dstPort: '', protocol: 'tcp', action: 'allow', color: 'default' },
+      'routing-rule': { label: 'Новое правило', condition: '', destination: '', priority: '', action: 'route', color: 'default' },
+      risk: { label: 'Новый риск', probability: '', impact: '', severity: 'medium', mitigation: '', color: 'default' },
+      group: { label: 'Новая группа', itemCount: 0, groupType: '', color: 'default' },
       note: { label: '', content: 'Новая заметка...', color: 'default' },
     };
     const newNode: Node = {
