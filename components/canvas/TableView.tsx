@@ -14,8 +14,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import * as LucideIcons from "lucide-react"
-import type { ServiceItem, ScannedPort, ScannedHost } from "@/types/canvas"
-import { Network, Activity, AlertCircle } from "lucide-react"
+import type { ServiceItem } from "@/types/canvas"
+import { Network } from "lucide-react"
 
 interface TableViewProps {
   nodes: Node[]
@@ -90,8 +90,6 @@ export function TableView({ nodes, edges }: TableViewProps) {
             <TableHead>Название</TableHead>
             <TableHead>Тип</TableHead>
             <TableHead>Группа</TableHead>
-            <TableHead>Хост/Статус</TableHead>
-            <TableHead>Порты</TableHead>
             <TableHead>Сервисы</TableHead>
             <TableHead>Входящие связи</TableHead>
             <TableHead>Исходящие связи</TableHead>
@@ -103,7 +101,7 @@ export function TableView({ nodes, edges }: TableViewProps) {
         <TableBody>
           {nodes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8 + allCustomFields.length} className="text-center text-muted-foreground">
+              <TableCell colSpan={6 + allCustomFields.length} className="text-center text-muted-foreground">
                 Нет узлов для отображения
               </TableCell>
             </TableRow>
@@ -126,14 +124,6 @@ export function TableView({ nodes, edges }: TableViewProps) {
               // Для tracked узлов
               const isTracked = node.type === 'tracked'
               const isTrackedGroup = node.type === 'tracked-group'
-              const host = node.data?.host
-              const hostStatus = node.data?.hostStatus as 'unknown' | 'online' | 'offline' | undefined
-              const scannedPorts = (node.data?.scannedPorts as ScannedPort[]) || []
-              
-              // Для tracked-group
-              const networkRange = node.data?.networkRange
-              const scannedHosts = (node.data?.scannedHosts as ScannedHost[]) || []
-
               // Определяем тип узла
               const nodeTypeLabel = node.type === 'tracked' 
                 ? 'Отслеживаемый' 
@@ -161,123 +151,6 @@ export function TableView({ nodes, edges }: TableViewProps) {
                   </TableCell>
                   <TableCell className="text-sm">
                     {parentGroup || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {isTracked ? (
-                      <div className="space-y-1">
-                        {host && (
-                          <div className="text-xs font-mono text-gray-700">{host}</div>
-                        )}
-                        {hostStatus && (
-                          <div className="flex items-center gap-1">
-                            {hostStatus === 'online' && (
-                              <div className="flex items-center gap-1 text-green-600">
-                                <Activity className="w-3 h-3" />
-                                <span className="text-xs">Online</span>
-                              </div>
-                            )}
-                            {hostStatus === 'offline' && (
-                              <div className="flex items-center gap-1 text-red-600">
-                                <AlertCircle className="w-3 h-3" />
-                                <span className="text-xs">Offline</span>
-                              </div>
-                            )}
-                            {hostStatus === 'unknown' && (
-                              <div className="flex items-center gap-1 text-gray-500">
-                                <Activity className="w-3 h-3" />
-                                <span className="text-xs">Проверка...</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {!host && <span className="text-muted-foreground text-xs">-</span>}
-                      </div>
-                    ) : isTrackedGroup ? (
-                      <div className="space-y-1">
-                        {networkRange && (
-                          <div className="text-xs font-mono text-gray-700">{networkRange}</div>
-                        )}
-                        {scannedHosts.length > 0 && (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <Activity className="w-3 h-3" />
-                            <span className="text-xs">Найдено: {scannedHosts.length}</span>
-                          </div>
-                        )}
-                        {!networkRange && <span className="text-muted-foreground text-xs">-</span>}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isTracked && scannedPorts.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {scannedPorts.map((scannedPort) => (
-                          <Tooltip key={scannedPort.port}>
-                            <TooltipTrigger asChild>
-                              <div className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-cyan-100 text-cyan-800 rounded cursor-help">
-                                <span className="font-mono font-semibold">{scannedPort.port}</span>
-                                {scannedPort.service && (
-                                  <span className="text-cyan-600">({scannedPort.service})</span>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs p-3 bg-gray-900 text-white border border-gray-700 shadow-lg">
-                              <div className="space-y-1 text-xs">
-                                <div>
-                                  <span className="font-semibold">Порт:</span> {scannedPort.port}
-                                </div>
-                                <div>
-                                  <span className="font-semibold">Протокол:</span> {scannedPort.protocol}
-                                </div>
-                                {scannedPort.service && (
-                                  <div>
-                                    <span className="font-semibold">Сервис:</span> {scannedPort.service}
-                                  </div>
-                                )}
-                                <div>
-                                  <span className="font-semibold">Статус:</span> {scannedPort.status}
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    ) : isTracked ? (
-                      <span className="text-muted-foreground text-xs">Не сканировано</span>
-                    ) : isTrackedGroup && scannedHosts.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {scannedHosts.slice(0, 5).map((host) => (
-                          <Tooltip key={host.ip}>
-                            <TooltipTrigger asChild>
-                              <div className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded cursor-help">
-                                <span className="font-mono font-semibold">{host.ip}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs p-3 bg-gray-900 text-white border border-gray-700 shadow-lg">
-                              <div className="space-y-1 text-xs">
-                                <div>
-                                  <span className="font-semibold">IP:</span> {host.ip}
-                                </div>
-                                {host.hostname && (
-                                  <div>
-                                    <span className="font-semibold">Hostname:</span> {host.hostname}
-                                  </div>
-                                )}
-                                <div>
-                                  <span className="font-semibold">Статус:</span> {host.status}
-                                </div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                        {scannedHosts.length > 5 && (
-                          <span className="text-xs text-gray-500">+{scannedHosts.length - 5}</span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {services.length > 0 ? (
