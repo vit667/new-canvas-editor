@@ -1,5 +1,4 @@
 import { useViewModeStore, type ViewMode } from '../store/viewModeStore';
-import { Button } from './ui/button';
 
 const VIEW_MODES: { value: ViewMode; label: string; icon: string; description: string }[] = [
   {
