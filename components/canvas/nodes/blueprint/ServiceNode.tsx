@@ -39,6 +39,7 @@ function ServiceNode({ data, selected }: NodeProps<ServiceNodeData>) {
       className="bp-card relative w-[280px] rounded-lg border px-3 py-2"
       style={{
         background: BP.panel,
+        color: BP.neutral,
         borderColor: selected ? accent : BP.border,
         boxShadow: selected ? `0 0 0 1px ${accent}` : undefined,
       }}

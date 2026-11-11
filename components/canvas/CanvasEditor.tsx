@@ -1377,6 +1377,18 @@ body {
 }
 
 .react-flow__viewport { overflow: visible !important; }
+${blueprint ? `
+/* Blueprint: тёмный фон с точечной сеткой */
+body { background: ${BP.bg}; color: ${BP.text}; }
+.export-container {
+  background-color: ${BP.bg};
+  background-image: radial-gradient(${BP.dot} 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
+  box-shadow: 0 0 0 1px ${BP.border};
+}
+.react-flow { background: transparent !important; }
+@media print { body { background: ${BP.bg}; } }
+` : ''}
 
 .react-flow__edges {
   position: absolute;
@@ -1715,7 +1727,7 @@ svg.react-flow__edges {
         newWindow.document.close();
       }
     }, 100);
-  }, [nodes, edges]);
+  }, [nodes, edges, blueprint]);
 
   const handleImportClick = useCallback(() => {
     const input = document.createElement('input');
