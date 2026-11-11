@@ -329,7 +329,7 @@
       "id": "ap",
       "type": "device",
       "position": {
-        "x": 560,
+        "x": 820,
         "y": 560
       },
       "data": {
@@ -380,8 +380,8 @@
       },
       "zIndex": 1,
       "style": {
-        "width": 1000,
-        "height": 420
+        "width": 1250,
+        "height": 600
       },
       "dragHandle": ".bp-section-drag"
     },
@@ -389,8 +389,8 @@
       "id": "hw",
       "type": "specs",
       "position": {
-        "x": 20,
-        "y": 90
+        "x": 24,
+        "y": 96
       },
       "data": {
         "label": "Hardware",
@@ -424,19 +424,121 @@
             "category": "HDD",
             "value": "7× Seagate Exos 16 TB",
             "detail": "SATA · passthrough → TrueNAS"
+          },
+          {
+            "id": "t5",
+            "icon": "harddrive",
+            "category": "SSD",
+            "value": "Samsung 980 500 GB",
+            "detail": "NVMe · Proxmox OS"
           }
         ]
       },
       "zIndex": 10,
-      "parentId": "srv",
-      "extent": "parent"
+      "parentId": "srv"
+    },
+    {
+      "id": "nas",
+      "type": "section",
+      "position": {
+        "x": 250,
+        "y": 96
+      },
+      "data": {
+        "label": "TrueNAS SCALE",
+        "role": "VM 133",
+        "icon": "si:truenas",
+        "ip": "10.0.10.10",
+        "hostname": "truenas.internal",
+        "vlanId": "lan",
+        "tag": "VLAN 10 · LAN"
+      },
+      "zIndex": 1,
+      "style": {
+        "width": 330,
+        "height": 300
+      },
+      "dragHandle": ".bp-section-drag",
+      "parentId": "srv"
+    },
+    {
+      "id": "vault",
+      "type": "specs",
+      "position": {
+        "x": 16,
+        "y": 92
+      },
+      "data": {
+        "label": "Pools",
+        "accent": "#4f9cf9",
+        "columns": 1,
+        "tiles": [
+          {
+            "id": "v1",
+            "icon": "database",
+            "category": "Vault · RAIDZ1",
+            "value": "7 HDD + 2 SSD",
+            "detail": "48% used · 86.8 TiB usable"
+          },
+          {
+            "id": "v2",
+            "icon": "harddrive",
+            "category": "FasterBoy",
+            "value": "1 NVMe · single disk",
+            "detail": "hourly snapshots → Backblaze B2"
+          }
+        ]
+      },
+      "zIndex": 10,
+      "parentId": "nas"
+    },
+    {
+      "id": "ha",
+      "type": "service",
+      "position": {
+        "x": 250,
+        "y": 430
+      },
+      "data": {
+        "label": "Home Assistant OS",
+        "subtitle": "Z2M · MQTT · OTBR · Matter",
+        "icon": "si:homeassistant",
+        "url": "ha.example.com",
+        "badge": "VM 106",
+        "badgeSub": "10.0.40.2",
+        "vlanId": "iot"
+      },
+      "zIndex": 10,
+      "parentId": "srv"
+    },
+    {
+      "id": "apps",
+      "type": "section",
+      "position": {
+        "x": 610,
+        "y": 96
+      },
+      "data": {
+        "label": "Services",
+        "role": "one unprivileged LXC per service",
+        "icon": "boxes",
+        "vlanId": "dmz",
+        "variant": "dashed"
+      },
+      "zIndex": 1,
+      "style": {
+        "width": 620,
+        "height": 480
+      },
+      "dragHandle": ".bp-section-drag",
+      "parentId": "srv"
     },
     {
       "id": "edge",
       "type": "service",
       "position": {
-        "x": 290,
-        "y": 90
+        "x": 16,
+        "y": 80
       },
       "data": {
         "label": "Edge stack",
@@ -467,15 +569,14 @@
         ]
       },
       "zIndex": 10,
-      "parentId": "srv",
-      "extent": "parent"
+      "parentId": "apps"
     },
     {
       "id": "jf",
       "type": "service",
       "position": {
-        "x": 290,
-        "y": 270
+        "x": 16,
+        "y": 250
       },
       "data": {
         "label": "Jellyfin",
@@ -487,35 +588,33 @@
         "vlanId": "dmz"
       },
       "zIndex": 10,
-      "parentId": "srv",
-      "extent": "parent"
+      "parentId": "apps"
     },
     {
-      "id": "ha",
+      "id": "immich",
       "type": "service",
       "position": {
-        "x": 600,
-        "y": 90
+        "x": 16,
+        "y": 350
       },
       "data": {
-        "label": "Home Assistant OS",
-        "subtitle": "Z2M · MQTT · Matter",
-        "icon": "si:homeassistant",
-        "url": "ha.example.com",
-        "badge": "VM 106",
-        "badgeSub": "10.0.40.2",
-        "vlanId": "iot"
+        "label": "Immich",
+        "subtitle": "photo library",
+        "icon": "si:immich",
+        "url": "immich.example.com",
+        "badge": "CT 158",
+        "badgeSub": ".58",
+        "vlanId": "dmz"
       },
       "zIndex": 10,
-      "parentId": "srv",
-      "extent": "parent"
+      "parentId": "apps"
     },
     {
       "id": "ai",
       "type": "service",
       "position": {
-        "x": 600,
-        "y": 200
+        "x": 316,
+        "y": 80
       },
       "data": {
         "label": "Open WebUI",
@@ -535,8 +634,54 @@
         ]
       },
       "zIndex": 10,
-      "parentId": "srv",
-      "extent": "parent"
+      "parentId": "apps"
+    },
+    {
+      "id": "git",
+      "type": "service",
+      "position": {
+        "x": 316,
+        "y": 200
+      },
+      "data": {
+        "label": "Forgejo",
+        "subtitle": "git · SSH on public 22",
+        "icon": "si:forgejo",
+        "url": "git.example.com",
+        "badge": "CT 131",
+        "badgeSub": ".131",
+        "vlanId": "dmz"
+      },
+      "zIndex": 10,
+      "parentId": "apps"
+    },
+    {
+      "id": "mon",
+      "type": "service",
+      "position": {
+        "x": 316,
+        "y": 300
+      },
+      "data": {
+        "label": "Grafana",
+        "subtitle": "dashboards",
+        "icon": "si:grafana",
+        "url": "grafana.example.com",
+        "badge": "CT 102",
+        "badgeSub": ".102",
+        "vlanId": "dmz",
+        "lanOnly": true,
+        "items": [
+          {
+            "id": "m1",
+            "icon": "si:prometheus",
+            "name": "Prometheus",
+            "url": "prometheus.internal"
+          }
+        ]
+      },
+      "zIndex": 10,
+      "parentId": "apps"
     }
   ],
   "edges": [
@@ -557,7 +702,7 @@
     {
       "id": "l1",
       "source": "sw",
-      "sourceHandle": "port-p1-source",
+      "sourceHandle": "port-p1-far-source",
       "target": "fw",
       "targetHandle": "bottom-target",
       "type": "link",
@@ -566,7 +711,23 @@
         "routing": "step",
         "kind": "trunk",
         "speed": "2.5G",
-        "label": "LACP · dual 2.5G"
+        "label": "LACP · dual 2.5G",
+        "centerY": 160
+      }
+    },
+    {
+      "id": "l1b",
+      "source": "sw",
+      "sourceHandle": "port-p2-far-source",
+      "target": "fw",
+      "targetHandle": "bottom-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "trunk",
+        "speed": "2.5G",
+        "centerY": 175
       }
     },
     {
@@ -632,5 +793,5 @@
     }
   ],
   "version": "1.0",
-  "exportedAt": "2026-11-11T09:20:23.289524+00:00"
+  "exportedAt": "2026-11-11T10:47:00.203378+00:00"
 }

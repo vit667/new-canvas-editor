@@ -34,14 +34,25 @@ export interface SwitchNodeData {
   portSide?: 'bottom' | 'top';
 }
 
-export const portHandleId = (portId: string, type: 'source' | 'target') => `port-${portId}-${type}`;
-export const portIdFromHandle = (handle?: string | null) =>
-  handle?.startsWith('port-') ? handle.replace(/^port-/, '').replace(/-(source|target)$/, '') : undefined;
+/** Расстояние от ряда портов до края карточки (padding py-2.5 + половина точки) */
+const PORT_EDGE_OFFSET = 14;
 
-function Port({ port, net, side }: { port: SwitchPort; net?: BlueprintNetwork; side: 'bottom' | 'top' }) {
+/** id точки порта; far — точка на противоположном краю карточки (для аплинков сверху) */
+export const portHandleId = (portId: string, type: 'source' | 'target', far = false) =>
+  `port-${portId}-${far ? 'far-' : ''}${type}`;
+export const portIdFromHandle = (handle?: string | null) =>
+  handle?.startsWith('port-') ? handle.replace(/^port-/, '').replace(/-(far-)?(source|target)$/, '') : undefined;
+
+const visibleHandle = { visibility: 'visible' as const, pointerEvents: 'all' as const };
+
+function Port({ port, net, side, ghost = false }: { port: SwitchPort; net?: BlueprintNetwork; side: 'bottom' | 'top'; ghost?: boolean }) {
   const color = port.disabled ? BP.border : port.trunk ? BP.text : net?.color || BP.muted;
   const isSfp = port.kind === 'sfp';
   const pos = side === 'top' ? Position.Top : Position.Bottom;
+  const edgeOffset = side === 'top' ? { top: -PORT_EDGE_OFFSET } : { bottom: -PORT_EDGE_OFFSET };
+  // «Призрак» порта: невидимая копия в зеркальном ряду у противоположного края карточки,
+  // нужна только чтобы точка подключения встала ровно напротив порта
+  const farPos = side === 'top' ? Position.Bottom : Position.Top;
 
   const name = (
     <div className="bp-mono text-center text-[9px] leading-none" style={{ color: BP.muted }}>
@@ -59,7 +70,19 @@ function Port({ port, net, side }: { port: SwitchPort; net?: BlueprintNetwork; s
   );
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className={ghost ? 'invisible relative flex flex-col items-center gap-1' : 'relative flex flex-col items-center gap-1'}>
+      {ghost ? (
+        <>
+          <Handle type="source" position={farPos} id={portHandleId(port.id, 'source', true)} className="bp-handle bp-port-handle" style={visibleHandle} />
+          <Handle type="target" position={farPos} id={portHandleId(port.id, 'target', true)} className="bp-handle bp-port-handle" style={visibleHandle} />
+        </>
+      ) : (
+        <>
+          {/* Точки подключения — на краю карточки, напротив порта (отступ = padding карточки) */}
+          <Handle type="source" position={pos} id={portHandleId(port.id, 'source')} className="bp-handle bp-port-handle" style={edgeOffset} />
+          <Handle type="target" position={pos} id={portHandleId(port.id, 'target')} className="bp-handle bp-port-handle" style={edgeOffset} />
+        </>
+      )}
       {side === 'bottom' ? name : label}
       <div
         className="relative flex items-end justify-center rounded-[4px] border-2"
@@ -77,8 +100,6 @@ function Port({ port, net, side }: { port: SwitchPort; net?: BlueprintNetwork; s
           className="mb-[3px] rounded-[1px]"
           style={{ width: isSfp ? 26 : 12, height: isSfp ? 4 : 6, background: alpha(color, port.disabled ? 0.3 : 0.7) }}
         />
-        <Handle type="source" position={pos} id={portHandleId(port.id, 'source')} className="bp-handle bp-port-handle" />
-        <Handle type="target" position={pos} id={portHandleId(port.id, 'target')} className="bp-handle bp-port-handle" />
       </div>
       {side === 'bottom' ? label : name}
     </div>
@@ -111,6 +132,15 @@ function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
       }}
     >
       <BlueprintHandles />
+
+      {/* Зеркальный ряд точек на противоположном краю — чтобы аплинк заходил в порт сверху */}
+      {ports.length > 0 && (
+        <div className={`pointer-events-none absolute right-3 left-3 flex flex-wrap items-start gap-1.5 ${side === 'top' ? 'bottom-0' : 'top-0'}`}>
+          {ports.map((p) => (
+            <Port key={p.id} port={p} side={side} ghost net={networks.find((n) => n.id === p.vlanId)} />
+          ))}
+        </div>
+      )}
 
       {side === 'top' && <div className="mb-2.5">{portsRow}</div>}
 

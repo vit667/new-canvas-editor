@@ -365,3 +365,18 @@
   width: 8px !important;
   height: 8px !important;
 }
+
+/* Точка поворота выделенной сетевой связи */
+.bp-bend {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 2px solid;
+  cursor: move;
+  box-shadow: 0 0 0 3px rgba(13, 17, 23, 0.6);
+}
+
+/* Подписи и точки поворота связей — поверх линий */
+.react-flow__edgelabel-renderer {
+  z-index: 11;
+}

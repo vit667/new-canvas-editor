@@ -28,6 +28,11 @@ export interface LinkEdgeData {
   label?: string;
   showSpeedLabel?: boolean;
   animated?: boolean;
+  /** Ручная точка поворота (координаты холста); пусто — авторазводка по дорожкам */
+  centerX?: number;
+  centerY?: number;
+  /** Где стоит подпись: по центру, у начала или у конца линии */
+  labelAt?: 'center' | 'source' | 'target';
 }
 
 export const BP = {

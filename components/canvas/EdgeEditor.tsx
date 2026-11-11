@@ -59,6 +59,8 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
   const [label, setLabel] = useState('');
   const [showSpeedLabel, setShowSpeedLabel] = useState(false);
   const [animated, setAnimated] = useState(false);
+  const [labelAt, setLabelAt] = useState<'center' | 'source' | 'target'>('center');
+  const [resetBend, setResetBend] = useState(false);
 
   useEffect(() => {
     if (edge) {
@@ -102,6 +104,8 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
       setLabel(d.label || '');
       setShowSpeedLabel(!!d.showSpeedLabel);
       setAnimated(!!d.animated);
+      setLabelAt(d.labelAt || 'center');
+      setResetBend(false);
     }
   }, [edge]);
 
@@ -142,6 +146,8 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
               label: label || undefined,
               showSpeedLabel,
               animated,
+              labelAt,
+              ...(resetBend ? { centerX: undefined, centerY: undefined } : {}),
             }
           : {}),
       },
@@ -205,10 +211,29 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
                   </select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Подпись</Label>
-                <Input value={label} placeholder="LACP · dual 2.5G" onChange={(e) => setLabel(e.target.value)} />
+              <div className="grid grid-cols-[1fr_140px] gap-3">
+                <div className="space-y-1.5">
+                  <Label>Подпись</Label>
+                  <Input value={label} placeholder="LACP · dual 2.5G" onChange={(e) => setLabel(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Где подпись</Label>
+                  <select value={labelAt} onChange={(e) => setLabelAt(e.target.value as 'center' | 'source' | 'target')} className={selectClass}>
+                    <option value="center">По центру</option>
+                    <option value="source">У начала</option>
+                    <option value="target">У конца</option>
+                  </select>
+                </div>
               </div>
+              {(edge.data as LinkEdgeData | undefined)?.centerX != null && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={resetBend} onChange={(e) => setResetBend(e.target.checked)} />
+                  Вернуть авторазводку (сбросить ручной поворот)
+                </label>
+              )}
+              <p className="text-muted-foreground text-xs">
+                Поворот линии можно тянуть мышью за точку на выделенной связи; двойной клик по точке — сброс.
+              </p>
               <div className="flex flex-wrap gap-4 text-sm">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={showSpeedLabel} onChange={(e) => setShowSpeedLabel(e.target.checked)} />

@@ -13,6 +13,8 @@ import ReactFlow, {
   type Connection,
   type Edge,
   type Node,
+  type NodeChange,
+  type NodePositionChange,
   BackgroundVariant,
   getNodesBounds,
 } from 'reactflow';
@@ -52,6 +54,7 @@ import ServiceNode from './nodes/blueprint/ServiceNode';
 import TableNode from './nodes/blueprint/TableNode';
 import LegendNode from './nodes/blueprint/LegendNode';
 import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
+import { releaseOrphans, reparentNodes } from '@/lib/nesting';
 import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
 import EdgeEditor from './EdgeEditor';
@@ -180,15 +183,25 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
     onStateChangeRef.current = onStateChange;
   }, [onStateChange]);
 
+  // Последнее, что мы отдали родителю: родитель возвращает это же в props,
+  // и такое «эхо» не должно считаться загрузкой нового проекта
+  const lastEmittedRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+
   // Синхронизируем состояние с родителем (но не во время инициализации)
   useEffect(() => {
     if (!isInitializing.current && onStateChangeRef.current) {
+      lastEmittedRef.current = { nodes, edges };
       onStateChangeRef.current(nodes, edges);
     }
   }, [nodes, edges]);
 
   // Инициализация начальными данными при первом запуске
   useEffect(() => {
+    // Эхо собственного состояния — ничего не делаем. Иначе на 100 мс глушится
+    // синхронизация, и последнее изменение (например, конец перетаскивания) теряется
+    const echo = lastEmittedRef.current;
+    if (echo && propInitialNodes === echo.nodes && propInitialEdges === echo.edges) return;
+
     isInitializing.current = true;
 
     if (propInitialNodes && propInitialEdges) {
@@ -315,128 +328,20 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
     };
   }, [nodes, addNode]);
 
-  // Функция для определения, попадает ли узел в границы группы
-  const findParentGroup = useCallback((node: Node, allNodes: Node[]): string | null => {
-    // Не привязываем группы к группам и сами узлы к себе
-    if (isContainerType(node.type)) return null;
-    
-    // Проверяем каждую группу
-    for (const group of allNodes) {
-      if (!isContainerType(group.type) || group.id === node.id) continue;
-      
-      const groupWidth = typeof group.style?.width === 'number' ? group.style.width : 300;
-      const groupHeight = typeof group.style?.height === 'number' ? group.style.height : 200;
-      const groupX = group.position.x;
-      const groupY = group.position.y;
-      
-      // Учитываем размер узла (примерный размер TextNode)
-      const nodeWidth = 200;
-      const nodeHeight = 100;
-      const nodeCenterX = node.position.x + nodeWidth / 2;
-      const nodeCenterY = node.position.y + nodeHeight / 2;
-      
-      // Проверяем, находится ли центр узла внутри группы
-      if (
-        nodeCenterX >= groupX &&
-        nodeCenterX <= groupX + groupWidth &&
-        nodeCenterY >= groupY &&
-        nodeCenterY <= groupY + groupHeight
-      ) {
-        return group.id;
-      }
-    }
-    
-    return null;
-  }, []);
-
   const onNodesChange = useCallback(
-    (changes: any) => {
+    (changes: NodeChange[]) => {
       setNodes((nds) => {
-        // Применяем изменения
-        let updatedNodes = applyNodeChanges(changes, nds);
-        
-        // Обрабатываем изменения для прилипания узлов к группам
-        updatedNodes = updatedNodes.map((node) => {
-          // Пропускаем группы (но обрабатываем их позиции для дочерних узлов)
-          if (isContainerType(node.type)) return node;
-          
-          // Если узел уже привязан к группе, проверяем, что группа все еще существует
-          if (node.parentId) {
-            const parentGroup = updatedNodes.find((n) => n.id === node.parentId);
-            if (!parentGroup) {
-              // Группа была удалена - освобождаем узел
-              return {
-                ...node,
-                parentId: undefined,
-                extent: undefined,
-              };
-            }
-            
-            // Если группа переместилась, позиция узла автоматически обновится ReactFlow
-            // Но нужно проверить, все ли еще узел в границах группы
-            const groupWidth = typeof parentGroup.style?.width === 'number' ? parentGroup.style.width : 300;
-            const groupHeight = typeof parentGroup.style?.height === 'number' ? parentGroup.style.height : 200;
-            const absoluteX = parentGroup.position.x + (node.position.x || 0);
-            const absoluteY = parentGroup.position.y + (node.position.y || 0);
-            
-            const nodeWidth = 200;
-            const nodeHeight = 100;
-            const nodeCenterX = absoluteX + nodeWidth / 2;
-            const nodeCenterY = absoluteY + nodeHeight / 2;
-            
-            const isInsideGroup = (
-              nodeCenterX >= parentGroup.position.x &&
-              nodeCenterX <= parentGroup.position.x + groupWidth &&
-              nodeCenterY >= parentGroup.position.y &&
-              nodeCenterY <= parentGroup.position.y + groupHeight
-            );
-            
-            if (!isInsideGroup) {
-              // Узел вышел из группы - освобождаем
-              return {
-                ...node,
-                parentId: undefined,
-                position: {
-                  x: absoluteX,
-                  y: absoluteY,
-                },
-                extent: undefined,
-              };
-            }
-            
-            // Узел все еще в группе - сохраняем привязку
-            return node;
-          }
-          
-          // Узел не привязан - проверяем, попадает ли он в какую-то группу
-          const parentId = findParentGroup(node, updatedNodes);
-          
-          if (parentId) {
-            const parentGroup = updatedNodes.find((n) => n.id === parentId);
-            if (parentGroup) {
-              // Вычисляем относительную позицию от группы
-              const relativeX = node.position.x - parentGroup.position.x;
-              const relativeY = node.position.y - parentGroup.position.y;
-              
-              return {
-                ...node,
-                parentId: parentId,
-                position: {
-                  x: relativeX,
-                  y: relativeY,
-                },
-                extent: 'parent' as const,
-              };
-            }
-          }
-          
-          return node;
-        });
-        
-        return updatedNodes;
+        const updated = releaseOrphans(applyNodeChanges(changes, nds));
+        // Перепривязка к группам/секциям — только когда перетаскивание закончилось
+        const dropped = new Set(
+          changes
+            .filter((c): c is NodePositionChange => c.type === 'position' && c.dragging === false)
+            .map((c) => c.id)
+        );
+        return dropped.size ? reparentNodes(updated, dropped) : updated;
       });
     },
-    [setNodes, findParentGroup]
+    [setNodes]
   );
 
   const onEdgesChange = useCallback(
