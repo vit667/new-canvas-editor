@@ -96,6 +96,8 @@ function useNavGroups(): NavGroup[] {
           children: area.sections.map((s) =>
             "soon" in s
               ? { id: s.slug, label: s.label, soon: true }
+              : "href" in s
+              ? { id: s.slug, label: s.label, href: s.href, isActive: pathname === s.href }
               : {
                   id: s.slug,
                   label: s.label,

@@ -1,4 +1,5 @@
 import type { Entity, InventoryState, Relation, ValidationIssue } from './types';
+import { buildPrefixTree, cidrHasIp, intToIp, ipToInt, parseCidr, parseRange, vrfOf } from './ipam';
 
 /**
  * Проверки целостности реестра (docs/INVENTORY_MODEL.md §6).
@@ -167,7 +168,91 @@ const ipUnique: Rule = (ctx) => {
   return issues;
 };
 
-export const RULES: Rule[] = [relationEndpoints, containsNoCycles, cablePerInterface, serialUnique, vlanVid, prefixSyntax, ipSyntax, ipUnique];
+// ─── IPAM (docs/INVENTORY_MODEL.md §6, пункты 1–5) ─────────────────────────
+
+/** Дубль подсети в VRF — ошибка; хост-биты — предупреждение. Вложенность — норма */
+const prefixDuplicates: Rule = (ctx) => {
+  const issues: ValidationIssue[] = [];
+  const seen = new Map<string, Entity<'prefix'>>();
+  for (const p of byKind(ctx, 'prefix')) {
+    const c = parseCidr(p.attrs.cidr);
+    if (!c) continue;
+    if (c.hostBits) {
+      issues.push({ level: 'warning', rule: 'prefix-host-bits', message: `Подсеть ${p.attrs.cidr}: выставлены хост-биты, правильно ${intToIp(c.network)}/${c.len}`, entityIds: [p.id] });
+    }
+    const key = `${vrfOf(p)}|${c.network}/${c.len}`;
+    const other = seen.get(key);
+    if (other) {
+      issues.push({ level: 'error', rule: 'prefix-duplicate', message: `Подсеть ${intToIp(c.network)}/${c.len} заведена дважды в одном VRF`, entityIds: [other.id, p.id] });
+    } else seen.set(key, p);
+  }
+  return issues;
+};
+
+/** Шлюз внутри подсети и не адрес сети/broadcast; DHCP-диапазоны корректны и не пересекаются */
+const prefixGatewayDhcp: Rule = (ctx) => {
+  const issues: ValidationIssue[] = [];
+  for (const p of byKind(ctx, 'prefix')) {
+    const c = parseCidr(p.attrs.cidr);
+    if (!c) continue;
+    const name = `${intToIp(c.network)}/${c.len}`;
+    if (p.attrs.gateway) {
+      const gw = ipToInt(p.attrs.gateway);
+      if (gw === null || !cidrHasIp(c, gw)) {
+        issues.push({ level: 'error', rule: 'prefix-gateway', message: `Шлюз ${p.attrs.gateway} вне подсети ${name}`, entityIds: [p.id] });
+      } else if (c.len < 31 && (gw === c.first || gw === c.last)) {
+        issues.push({ level: 'error', rule: 'prefix-gateway', message: `Шлюз ${p.attrs.gateway} — адрес сети или broadcast в ${name}`, entityIds: [p.id] });
+      }
+    }
+    const ranges = (p.attrs.dhcpRanges || []).map((r) => ({ r, pr: parseRange(r) }));
+    ranges.forEach(({ r, pr }, i) => {
+      if (!pr || pr.start < c.first || pr.end > c.last) {
+        issues.push({ level: 'error', rule: 'prefix-dhcp', message: `DHCP ${r.start}–${r.end} некорректен или вне подсети ${name}`, entityIds: [p.id] });
+        return;
+      }
+      for (const { r: r2, pr: pr2 } of ranges.slice(i + 1)) {
+        if (pr2 && !(pr.end < pr2.start || pr.start > pr2.end)) {
+          issues.push({ level: 'error', rule: 'prefix-dhcp', message: `DHCP-диапазоны ${r.start}–${r.end} и ${r2.start}–${r2.end} в ${name} пересекаются`, entityIds: [p.id] });
+        }
+      }
+    });
+  }
+  return issues;
+};
+
+/** Адрес вне учтённых подсетей, в DHCP-пуле или на адресе сети/broadcast — предупреждения */
+const ipPlacement: Rule = (ctx) => {
+  const prefixes = byKind(ctx, 'prefix');
+  if (!prefixes.length) return [];
+  const ips = byKind(ctx, 'ipAddress');
+  const tree = buildPrefixTree(prefixes, ips);
+  const vrfsWithPrefixes = new Set(prefixes.map(vrfOf));
+  const issues: ValidationIssue[] = [];
+  for (const ip of tree.orphanIps) {
+    if (!vrfsWithPrefixes.has(vrfOf(ip))) continue;
+    issues.push({ level: 'warning', rule: 'ip-outside-ipam', message: `Адрес ${ip.attrs.address} не входит ни в одну подсеть`, entityIds: [ip.id] });
+  }
+  for (const ip of ips) {
+    const home = tree.prefixOfIp(ip);
+    const n = ipToInt(ip.attrs.address ?? '');
+    if (!home || n === null) continue;
+    if (home.cidr.len < 31 && (n === home.cidr.first || n === home.cidr.last)) {
+      issues.push({ level: 'warning', rule: 'ip-network-broadcast', message: `Адрес ${ip.attrs.address} — адрес сети или broadcast подсети ${home.entity.attrs.cidr}`, entityIds: [ip.id, home.entity.id] });
+    }
+    for (const r of home.entity.attrs.dhcpRanges || []) {
+      const pr = parseRange(r);
+      if (pr && n >= pr.start && n <= pr.end) {
+        issues.push({ level: 'warning', rule: 'ip-in-dhcp', message: `Адрес ${ip.attrs.address} попадает в DHCP-пул ${r.start}–${r.end}`, entityIds: [ip.id, home.entity.id] });
+      }
+    }
+  }
+  return issues;
+};
+
+export const RULES: Rule[] = [
+  relationEndpoints, containsNoCycles, cablePerInterface, serialUnique, vlanVid,
+  prefixSyntax, ipSyntax, ipUnique, prefixDuplicates, prefixGatewayDhcp, ipPlacement,
+];
 
 export function runRules(ctx: RuleContext, rules: Rule[] = RULES): ValidationIssue[] {
   return rules.flatMap((r) => r(ctx));

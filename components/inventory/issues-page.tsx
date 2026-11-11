@@ -20,6 +20,13 @@ const RULE_LABELS: Record<string, string> = {
   "prefix-cidr": "Некорректный CIDR",
   "ip-syntax": "Некорректный IP",
   "ip-unique": "Повтор IP-адреса",
+  "prefix-duplicate": "Дубль подсети в VRF",
+  "prefix-host-bits": "Хост-биты в CIDR",
+  "prefix-gateway": "Шлюз вне подсети",
+  "prefix-dhcp": "DHCP-пул",
+  "ip-outside-ipam": "Адрес вне подсетей",
+  "ip-network-broadcast": "Адрес сети / broadcast",
+  "ip-in-dhcp": "Адрес в DHCP-пуле",
 }
 
 /** Все проблемы реестра, найденные проверками (docs/INVENTORY_MODEL.md §6) */

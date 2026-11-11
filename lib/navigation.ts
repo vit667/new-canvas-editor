@@ -6,6 +6,7 @@ import type { EntityKind } from '@/lib/inventory/types';
  *   /schemes                 список схем
  *   /schemes/[id]            редактор схемы
  *   /inventory/[section]     таблица раздела реестра (с фильтром по схеме)
+ *   /ipam                    IPAM: дерево подсетей, занятость, свободное место
  *   /issues                  проблемы реестра
  */
 
@@ -24,7 +25,7 @@ export interface NavArea {
   id: string;
   label: string;
   icon: string;
-  sections: (InventorySection | { slug: string; label: string; soon: true })[];
+  sections: (InventorySection | { slug: string; label: string; soon: true } | { slug: string; label: string; href: string })[];
 }
 
 export const INVENTORY_SECTIONS: InventorySection[] = [
@@ -59,7 +60,7 @@ export const INVENTORY_AREAS: NavArea[] = [
   { id: 'hardware', label: 'Оборудование', icon: 'server', sections: [sec('devices'), sec('ports'), sec('cables')] },
   {
     id: 'network', label: 'Сеть', icon: 'network',
-    sections: [sec('vlans'), sec('prefixes'), sec('ip'), { slug: 'ipam', label: 'IPAM', soon: true }, { slug: 'nat', label: 'NAT и потоки', soon: true }],
+    sections: [{ slug: 'ipam', label: 'IPAM', href: '/ipam' }, sec('vlans'), sec('prefixes'), sec('ip'), { slug: 'nat', label: 'NAT и потоки', soon: true }],
   },
   { id: 'apps', label: 'Сервисы', icon: 'boxes', sections: [sec('services'), sec('software'), sec('external'), sec('groups')] },
   {

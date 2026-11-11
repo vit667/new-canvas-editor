@@ -314,11 +314,36 @@ export function syncDiagram(repo: InventoryRepository, projectId: string, nodes:
     changes.push(rest.refs.length ? { op: 'upsert', entity: { ...c, source: rest } as EntityInput } : { op: 'delete', id: c.id });
   }
 
-  const result = repo.apply(changes, `diagram:${projectId}`);
+  // Одна ошибка на схеме (например, две сети с одинаковым CIDR в панели «Сети») не должна
+  // блокировать синхронизацию всей схемы: откладываем проблемные объекты и пробуем снова.
+  let pending = changes;
+  const skipped: { level: string; message: string }[] = [];
+  let result = repo.apply(pending, `diagram:${projectId}`);
+  for (let attempt = 0; !result.ok && attempt < 5; attempt++) {
+    // Откладываем только «лишнее»: из конфликтующих объектов первый (или уже сохранённый) остаётся
+    const bad = new Set(
+      result.issues
+        .filter((i) => i.level === 'error')
+        .flatMap((i) => {
+          const fresh = i.entityIds.filter((id) => !repo.get(id));
+          if (fresh.length < i.entityIds.length) return fresh;
+          return i.entityIds.length > 1 ? i.entityIds.slice(1) : i.entityIds;
+        })
+    );
+    skipped.push(...result.issues.filter((i) => i.level === 'error').map((i) => ({ level: 'error', message: `${i.message} — объект не сохранён в реестр` })));
+    const next = pending.filter((c) => {
+      if (c.op === 'upsert') return !bad.has(c.entity.id);
+      if (c.op === 'link') return !bad.has(c.relation.fromId) && !bad.has(c.relation.toId);
+      return true;
+    });
+    if (next.length === pending.length) break;
+    pending = next;
+    result = repo.apply(pending, `diagram:${projectId}`);
+  }
   return {
     patches: result.ok ? patches : {},
     changedIds: result.changedIds,
-    issues: result.issues.map((i) => ({ level: i.level, message: i.message })),
+    issues: [...skipped, ...result.issues.map((i) => ({ level: i.level, message: i.message }))],
   };
 }
 
