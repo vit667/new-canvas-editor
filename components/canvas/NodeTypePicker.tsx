@@ -7,11 +7,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Server, Monitor, LayoutPanelTop, Network, EthernetPort, Cpu, Boxes, Table2, ListChecks, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
+import { Cloud, Globe2, Server, Monitor, LayoutPanelTop, Network, EthernetPort, Cpu, Boxes, Table2, ListChecks, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
 
-export type PickableNodeType = 'device' | 'section' | 'networks' | 'switch' | 'specs' | 'service' | 'table' | 'legend' | 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
+export type PickableNodeType = 'cloud' | 'external' | 'device' | 'section' | 'networks' | 'switch' | 'specs' | 'service' | 'table' | 'legend' | 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
 
 const NODE_TYPE_OPTIONS = [
+  {
+    type: 'cloud' as PickableNodeType,
+    label: 'Интернет / облако',
+    description: 'Облако со своим названием и скоростью канала',
+    icon: Cloud,
+    bg: 'bg-slate-50 hover:bg-slate-100 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-700',
+    iconBg: 'bg-slate-200 dark:bg-slate-800',
+    iconColor: 'text-slate-600 dark:text-slate-300',
+  },
+  {
+    type: 'external' as PickableNodeType,
+    label: 'Внешние системы',
+    description: 'SaaS и внешние сервисы: Cloudflare, Backblaze, удалённый доступ',
+    icon: Globe2,
+    bg: 'bg-rose-50 hover:bg-rose-100 border-rose-200 dark:bg-rose-950 dark:hover:bg-rose-900 dark:border-rose-800',
+    iconBg: 'bg-rose-100 dark:bg-rose-900',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+  },
   {
     type: 'device' as PickableNodeType,
     label: 'Устройство',

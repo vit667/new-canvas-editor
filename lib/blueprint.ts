@@ -17,7 +17,7 @@ export interface BlueprintNetwork {
 }
 
 export type LinkSpeed = '100G' | '40G' | '25G' | '10G' | '5G' | '2.5G' | '1G' | '100M';
-export type LinkKind = 'access' | 'trunk' | 'wan' | 'kvm' | 'internet';
+export type LinkKind = 'access' | 'trunk' | 'wan' | 'kvm' | 'internet' | 'wireless';
 export type LinkRouting = 'step' | 'bezier' | 'straight';
 
 export interface LinkEdgeData {
@@ -85,6 +85,7 @@ export const KIND_OPTIONS: { value: LinkKind; label: string; hint: string }[] = 
   { value: 'wan', label: 'WAN', hint: 'внешний аплинк' },
   { value: 'kvm', label: 'Консоль / KVM', hint: 'HDMI + USB, штрих' },
   { value: 'internet', label: 'Через интернет', hint: 'туннель/VPN, пунктир' },
+  { value: 'wireless', label: 'Wi-Fi', hint: 'беспроводное подключение, точки' },
 ];
 
 export const ROUTING_OPTIONS: { value: LinkRouting; label: string }[] = [

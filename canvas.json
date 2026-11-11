@@ -1,6 +1,106 @@
 {
   "nodes": [
     {
+      "id": "inet",
+      "type": "cloud",
+      "position": {
+        "x": 395,
+        "y": -470
+      },
+      "data": {
+        "label": "Internet",
+        "subtitle": "semi-static public IPv4",
+        "down": "600 Mbit/s",
+        "up": "50 Mbit/s",
+        "accent": "#8b96a5"
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "ext",
+      "type": "external",
+      "position": {
+        "x": 1060,
+        "y": -460
+      },
+      "data": {
+        "label": "External",
+        "items": [
+          {
+            "id": "x1",
+            "icon": "si:cloudflare",
+            "name": "Cloudflare",
+            "note": "DNS · *.example.com · DNS-01 wildcard cert",
+            "accent": "#f0883e"
+          },
+          {
+            "id": "x2",
+            "icon": "si:backblaze",
+            "name": "Backblaze B2",
+            "note": "offsite copy of NAS data",
+            "accent": "#f85149"
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "remote",
+      "type": "external",
+      "position": {
+        "x": -420,
+        "y": -430
+      },
+      "data": {
+        "label": "Remote access",
+        "items": [
+          {
+            "id": "ra",
+            "icon": "si:wireguard",
+            "name": "Remote access",
+            "note": "phone · laptop · WireGuard VPN",
+            "accent": "#39c5cf"
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "lap",
+      "type": "device",
+      "position": {
+        "x": 1180,
+        "y": 520
+      },
+      "data": {
+        "label": "ThinkPad",
+        "role": "laptop",
+        "icon": "ci:laptop",
+        "model": "X1 Carbon",
+        "ip": "10.0.10.51",
+        "hostname": "thinkpad.internal",
+        "vlanId": "lan"
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "phone",
+      "type": "device",
+      "position": {
+        "x": 1180,
+        "y": 690
+      },
+      "data": {
+        "label": "Guest phone",
+        "role": "wireless client",
+        "icon": "ci:phone",
+        "model": "Wi-Fi 6",
+        "ip": "10.0.30.112",
+        "vlanId": "guest"
+      },
+      "zIndex": 10
+    },
+    {
       "id": "nets",
       "type": "networks",
       "position": {
@@ -686,6 +786,87 @@
   ],
   "edges": [
     {
+      "id": "i1",
+      "source": "inet",
+      "sourceHandle": "bottom-source",
+      "target": "fritz",
+      "targetHandle": "port-cable-far-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "wan",
+        "label": "Cable"
+      }
+    },
+    {
+      "id": "i2",
+      "source": "remote",
+      "sourceHandle": "ext-ra-right-source",
+      "target": "inet",
+      "targetHandle": "left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "bezier",
+        "kind": "internet"
+      }
+    },
+    {
+      "id": "i3",
+      "source": "inet",
+      "sourceHandle": "right-source",
+      "target": "ext",
+      "targetHandle": "ext-x1-left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "bezier",
+        "kind": "internet"
+      }
+    },
+    {
+      "id": "i4",
+      "source": "inet",
+      "sourceHandle": "right-source",
+      "target": "ext",
+      "targetHandle": "ext-x2-left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "bezier",
+        "kind": "internet"
+      }
+    },
+    {
+      "id": "wf1",
+      "source": "ap",
+      "sourceHandle": "right-source",
+      "target": "lap",
+      "targetHandle": "left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "bezier",
+        "kind": "wireless",
+        "vlanId": "lan"
+      }
+    },
+    {
+      "id": "wf2",
+      "source": "ap",
+      "sourceHandle": "right-source",
+      "target": "phone",
+      "targetHandle": "left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "bezier",
+        "kind": "wireless",
+        "vlanId": "guest"
+      }
+    },
+    {
       "id": "w1",
       "source": "fritz",
       "sourceHandle": "port-f1-source",
@@ -793,5 +974,5 @@
     }
   ],
   "version": "1.0",
-  "exportedAt": "2026-11-11T10:47:00.203378+00:00"
+  "exportedAt": "2026-11-11T11:12:33.252429+00:00"
 }

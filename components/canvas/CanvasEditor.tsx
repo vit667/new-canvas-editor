@@ -53,6 +53,8 @@ import SpecsNode from './nodes/blueprint/SpecsNode';
 import ServiceNode from './nodes/blueprint/ServiceNode';
 import TableNode from './nodes/blueprint/TableNode';
 import LegendNode from './nodes/blueprint/LegendNode';
+import CloudNode from './nodes/blueprint/CloudNode';
+import ExternalNode from './nodes/blueprint/ExternalNode';
 import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
 import { releaseOrphans, reparentNodes } from '@/lib/nesting';
 import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
@@ -81,6 +83,8 @@ const nodeTypes = {
   service: ServiceNode,
   table: TableNode,
   legend: LegendNode,
+  cloud: CloudNode,
+  external: ExternalNode,
 };
 
 const edgeTypes = {
@@ -487,6 +491,14 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         ],
       },
       legend: { label: 'Легенда', showKinds: true, showSpeeds: true, showNetworks: false },
+      cloud: { label: 'Internet', subtitle: 'semi-static public IPv4', down: '600 Mbit/s', up: '50 Mbit/s', accent: '#8b96a5' },
+      external: {
+        label: '',
+        items: [
+          { id: 'x1', icon: 'si:cloudflare', name: 'Cloudflare', note: 'DNS · *.example.com · DNS-01 wildcard cert', accent: '#f0883e' },
+          { id: 'x2', icon: 'si:backblaze', name: 'Backblaze B2', note: 'offsite copy of NAS data', accent: '#f85149' },
+        ],
+      },
     };
     const isSection = type === 'section';
     const newNode: Node = {

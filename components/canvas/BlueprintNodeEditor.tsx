@@ -20,7 +20,7 @@ import {
 import IconPicker from './IconPicker';
 import AppIcon from './AppIcon';
 
-export const BLUEPRINT_NODE_TYPES = ['device', 'section', 'networks', 'switch', 'specs', 'service', 'table', 'legend'];
+export const BLUEPRINT_NODE_TYPES = ['device', 'section', 'networks', 'switch', 'specs', 'service', 'table', 'legend', 'cloud', 'external'];
 
 interface Props {
   node: Node;
@@ -41,6 +41,8 @@ const TITLES: Record<string, string> = {
   service: 'Сервис / стек',
   table: 'Таблица',
   legend: 'Легенда',
+  cloud: 'Интернет / облако',
+  external: 'Внешние системы',
 };
 
 type Row = { id: string } & Record<string, any>;
@@ -422,6 +424,58 @@ export default function BlueprintNodeEditor({ node, isOpen, onClose, onSave }: P
                     <Input value={r.title} placeholder="Traefik" onChange={(e) => setRow({ title: e.target.value })} />
                     <Input value={r.tags ?? ''} placeholder="TCP, UDP" className="font-mono" onChange={(e) => setRow({ tags: e.target.value })} />
                     <Input value={r.note ?? ''} placeholder="описание" className="col-span-3" onChange={(e) => setRow({ note: e.target.value })} />
+                  </div>
+                )}
+              />
+            </>
+          )}
+
+          {node.type === 'cloud' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {field('label', 'Название', 'Internet / Yandex Cloud / MPLS')}
+                {field('subtitle', 'Подпись', 'semi-static public IPv4')}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {field('down', 'Скорость ↓', '600 Mbit/s', true)}
+                {field('up', 'Скорость ↑', '50 Mbit/s', true)}
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Цвет</Label>
+                {accentPicker()}
+              </div>
+              {iconPicker}
+            </>
+          )}
+
+          {node.type === 'external' && (
+            <>
+              {field('label', 'Заголовок (необязательно)', 'External')}
+              <ListEditor
+                title="Системы"
+                addLabel="Система"
+                rows={data.items || []}
+                onChange={(items) => set('items', items)}
+                make={() => ({ id: newId('x'), icon: '', name: '', note: '', accent: ACCENT_COLORS[0].value })}
+                render={(it, setItem) => (
+                  <div className="grid gap-1.5">
+                    <div className="flex gap-1.5">
+                      <IconButton value={it.icon} onChange={(v) => setItem({ icon: v })} />
+                      <Input value={it.name} placeholder="Cloudflare" onChange={(e) => setItem({ name: e.target.value })} />
+                    </div>
+                    <Input value={it.note ?? ''} placeholder="DNS · *.example.com · DNS-01 wildcard cert" onChange={(e) => setItem({ note: e.target.value })} />
+                    <div className="flex flex-wrap gap-1">
+                      {ACCENT_COLORS.map((c) => (
+                        <button
+                          key={c.value}
+                          type="button"
+                          title={c.label}
+                          onClick={() => setItem({ accent: c.value })}
+                          className={cn('h-5 w-5 rounded-full border-2', it.accent === c.value ? 'border-foreground' : 'border-transparent')}
+                          style={{ background: c.value }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               />

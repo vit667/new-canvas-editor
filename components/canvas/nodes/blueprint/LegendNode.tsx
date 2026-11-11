@@ -15,6 +15,7 @@ const KIND_SAMPLE: Record<string, { stroke: string; width: number; dash?: string
   wan: { stroke: '#f85149', width: 2.5 },
   kvm: { stroke: BP.muted, width: 1.5, dash: '6 4' },
   internet: { stroke: BP.muted, width: 1.25, dash: '2 5' },
+  wireless: { stroke: '#4f9cf9', width: 2.25, dash: '0.1 6' },
 };
 
 const usedSelector = (s: ReactFlowState) => {

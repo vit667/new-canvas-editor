@@ -380,3 +380,32 @@
 .react-flow__edgelabel-renderer {
   z-index: 11;
 }
+
+/* CI-иконки (components/canvas/ci-icons.tsx): светлые значения — фолбэки в SVG.
+   Тёмная палитра — в тёмной теме приложения и всегда внутри blueprint-карточек. */
+.dark .ci,
+.bp-card .ci,
+.bp-canvas .ci {
+  --ci-top: #64748b;
+  --ci-front: #475569;
+  --ci-side: #334155;
+  --ci-edge: #cbd5e1;
+  --ci-hole: #0f172a;
+  --ci-slot: #94a3b8;
+  --ci-screen: #020617;
+  --ci-shadow: #000000;
+  --ci-paper: #e2e8f0;
+  --ci-badge-ring: #0f172a;
+}
+
+/* Объёмная иконка в плитке — крупнее глифа, «выступает» из плитки */
+[data-slot="icon-tile"] .ci {
+  transform: scale(1.75);
+}
+
+.react-flow__node-cloud,
+.react-flow__node-external {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}

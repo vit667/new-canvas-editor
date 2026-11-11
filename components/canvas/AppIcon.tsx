@@ -2,10 +2,13 @@
 
 import { memo } from 'react';
 import { getIconComponent } from '@/lib/canvas-icons';
+import { CiIcon, type CiKind } from './ci-icons';
 import {
   BRAND_PREFIX,
+  CI_PREFIX,
   IMG_PREFIX,
   isBrandIcon,
+  isCiIcon,
   isImageIcon,
   useBrandHex,
   useBrandPath,
@@ -31,13 +34,25 @@ function BrandIcon({ slug, className, brandColor }: { slug: string; className?: 
   );
 }
 
-/** Рендерит иконку любого формата: lucide / si:бренд / img:своя */
+/** Рендерит иконку любого формата: lucide / si:бренд / ci:объёмная / img:своя */
 function AppIcon({ value, className, brandColor = true, fallback }: AppIconProps) {
   const v = value && value !== 'none' ? value : fallback;
   if (!v) return null;
 
   if (isBrandIcon(v)) {
     return <BrandIcon slug={v.slice(BRAND_PREFIX.length)} className={className} brandColor={brandColor} />;
+  }
+
+  if (isCiIcon(v)) {
+    return (
+      <CiIcon
+        kind={v.slice(CI_PREFIX.length) as CiKind}
+        size={48}
+        width="100%"
+        height="100%"
+        className={cn('size-4 shrink-0 overflow-visible', className)}
+      />
+    );
   }
 
   if (isImageIcon(v)) {

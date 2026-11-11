@@ -8,6 +8,7 @@ import { persist } from 'zustand/middleware';
  * Единая система иконок для blueprint-узлов. Значение иконки — строка:
  *   "server"            — lucide-иконка из lib/canvas-icons (как раньше)
  *   "si:proxmox"        — бренд из simple-icons (public/brand-icons, грузится лениво)
+ *   "ci:server"         — объёмная CI-иконка (components/canvas/ci-icons.tsx)
  *   "img:data:image/…"  — своя иконка (SVG/PNG), хранится прямо в узле,
  *                         поэтому переживает экспорт/импорт и синхронизацию
  */
@@ -21,9 +22,11 @@ export interface BrandIndexEntry {
 
 export const BRAND_PREFIX = 'si:';
 export const IMG_PREFIX = 'img:';
+export const CI_PREFIX = 'ci:';
 
 export const isBrandIcon = (v?: string) => !!v && v.startsWith(BRAND_PREFIX);
 export const isImageIcon = (v?: string) => !!v && v.startsWith(IMG_PREFIX);
+export const isCiIcon = (v?: string) => !!v && v.startsWith(CI_PREFIX);
 
 /** Популярное для инфраструктурных схем — показывается в пикере без поиска */
 export const POPULAR_BRANDS = [

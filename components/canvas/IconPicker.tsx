@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { iconOptions } from '@/lib/canvas-icons';
 import {
   BRAND_PREFIX,
+  CI_PREFIX,
   IMG_PREFIX,
   fileToIconSrc,
   isBrandIcon,
+  isCiIcon,
   isImageIcon,
   searchBrands,
   useBrandIndex,
@@ -19,6 +21,7 @@ import {
 import { newId } from '@/lib/blueprint';
 import { cn } from '@/lib/utils';
 import AppIcon from './AppIcon';
+import { CI_GROUPS, CI_KINDS, CiIcon, type CiGroup } from './ci-icons';
 
 interface IconPickerProps {
   value?: string;
@@ -33,9 +36,11 @@ const cellClass = (active: boolean) =>
     active ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted'
   );
 
-/** Пикер иконок: общие (lucide) · бренды (simple-icons, 3000+) · свои (загрузка SVG/PNG) */
+/** Пикер иконок: устройства (CI) · общие (lucide) · бренды (simple-icons, 3000+) · свои (загрузка SVG/PNG) */
 export default function IconPicker({ value, onChange, compact }: IconPickerProps) {
-  const [tab, setTab] = useState(isBrandIcon(value) ? 'brands' : isImageIcon(value) ? 'custom' : 'common');
+  const [tab, setTab] = useState(
+    isBrandIcon(value) ? 'brands' : isImageIcon(value) ? 'custom' : isCiIcon(value) || !value ? 'devices' : 'common'
+  );
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -43,6 +48,14 @@ export default function IconPicker({ value, onChange, compact }: IconPickerProps
   const { icons: custom, add, remove } = useCustomIconsStore();
 
   const brands = useMemo(() => (index ? searchBrands(index, query) : []), [index, query]);
+  const devices = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q ? CI_KINDS.filter((k) => k.label.toLowerCase().includes(q) || k.kind.toLowerCase().includes(q)) : CI_KINDS;
+    const groups = new Map<CiGroup, typeof CI_KINDS>();
+    for (const k of list) groups.set(k.group, [...(groups.get(k.group) || []), k]);
+    return [...groups.entries()];
+  }, [query]);
+
   const common = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q ? iconOptions.filter((o) => o.label.toLowerCase().includes(q) || o.value.includes(q)) : iconOptions;
@@ -68,6 +81,7 @@ export default function IconPicker({ value, onChange, compact }: IconPickerProps
     <Tabs value={tab} onValueChange={setTab} className="gap-2">
       <div className="flex items-center gap-2">
         <TabsList>
+          <TabsTrigger value="devices">Устройства</TabsTrigger>
           <TabsTrigger value="common">Общие</TabsTrigger>
           <TabsTrigger value="brands">Бренды</TabsTrigger>
           <TabsTrigger value="custom">Свои</TabsTrigger>
@@ -87,6 +101,36 @@ export default function IconPicker({ value, onChange, compact }: IconPickerProps
           <AppIcon value={value} fallback="box" />
         </div>
       </div>
+
+      <TabsContent value="devices" className="mt-0">
+        <div className={cn('space-y-2 overflow-y-auto rounded-md border p-2', compact ? 'max-h-40' : 'max-h-64')}>
+          {devices.map(([group, kinds]) => (
+            <div key={group}>
+              <div className="text-muted-foreground mb-1 text-[11px] font-medium">{CI_GROUPS[group]}</div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1">
+                {kinds.map((k) => {
+                  const v = CI_PREFIX + k.kind;
+                  return (
+                    <button
+                      key={k.kind}
+                      type="button"
+                      title={k.label}
+                      onClick={() => onChange(v)}
+                      className={cn(
+                        'flex h-12 items-center justify-center rounded-md border transition-colors',
+                        value === v ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted'
+                      )}
+                    >
+                      <CiIcon kind={k.kind} size={40} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {devices.length === 0 && <div className="text-muted-foreground p-1 text-xs">Ничего не найдено</div>}
+        </div>
+      </TabsContent>
 
       <TabsContent value="common" className="mt-0">
         <div className={gridClass}>

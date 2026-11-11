@@ -147,10 +147,10 @@ function LinkEdge(props: EdgeProps<LinkEdgeData>) {
     BP.neutral;
 
   const width =
-    kind === 'internet' ? 1.25 : kind === 'kvm' ? 1.5 : data.speed ? speedWidth(data.speed) : Number(style.strokeWidth) || 2.5;
+    kind === 'internet' ? 1.25 : kind === 'kvm' ? 1.5 : kind === 'wireless' ? 2.25 : data.speed ? speedWidth(data.speed) : Number(style.strokeWidth) || 2.5;
 
   const dash =
-    kind === 'kvm' ? '6 4' : kind === 'internet' ? '2 5' : (style.strokeDasharray as string | undefined);
+    kind === 'kvm' ? '6 4' : kind === 'internet' ? '2 5' : kind === 'wireless' ? '0.1 6' : (style.strokeDasharray as string | undefined);
 
   const glow = selected ? `drop-shadow(0 0 6px ${alpha(color, 0.8)})` : undefined;
 
@@ -239,7 +239,7 @@ function LinkEdge(props: EdgeProps<LinkEdgeData>) {
                 stroke: color,
                 strokeWidth: width,
                 strokeDasharray: dash,
-                strokeLinecap: kind === 'internet' ? 'round' : undefined,
+                strokeLinecap: kind === 'internet' || kind === 'wireless' ? 'round' : undefined,
                 filter: glow,
               }
         }
