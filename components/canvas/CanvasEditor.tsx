@@ -57,6 +57,7 @@ import CloudNode from './nodes/blueprint/CloudNode';
 import ExternalNode from './nodes/blueprint/ExternalNode';
 import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
 import { releaseOrphans, reparentNodes } from '@/lib/nesting';
+import { stripEntityIds } from '@/lib/inventory/diagram-sync';
 import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
 import EdgeEditor from './EdgeEditor';
@@ -599,7 +600,8 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         y: selectedNode.position.y + 20,
       },
       data: {
-        ...selectedNode.data,
+        // Копия — новый объект реестра: привязки не переносим
+        ...stripEntityIds(selectedNode.data),
         // Если есть сервисы, клонируем их тоже
         services: selectedNode.data.services
           ? selectedNode.data.services.map((service: any) => ({
@@ -656,7 +658,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       id: newId,
       position: pastePosition,
       data: {
-        ...clipboard.data,
+        ...stripEntityIds(clipboard.data),
         services: clipboard.data.services
           ? clipboard.data.services.map((service: any) => ({
               ...service,

@@ -126,8 +126,8 @@ export function useBrandPath(slug?: string): string | undefined {
   return d;
 }
 
-/** Цвет бренда; слишком тёмные (чёрный и т.п.) осветляем, чтобы читались на тёмном фоне */
-const hexCache = new Map<string, string>();
+/** Цвет бренда; для слишком тёмных (чёрный и т.п.) — undefined: иконка берёт цвет текста вокруг */
+const hexCache = new Map<string, string | undefined>();
 export function useBrandHex(slug?: string): string | undefined {
   const [hex, setHex] = useState<string | undefined>(slug ? hexCache.get(slug) : undefined);
   useEffect(() => {
@@ -137,7 +137,7 @@ export function useBrandHex(slug?: string): string | undefined {
     loadBrandIndex().then((index) => {
       const e = index.find((i) => i.s === slug);
       const value = e ? readableHex(e.h) : undefined;
-      if (value) hexCache.set(slug, value);
+      if (e) hexCache.set(slug, value);
       if (alive) setHex(value);
     });
     return () => {
@@ -147,11 +147,11 @@ export function useBrandHex(slug?: string): string | undefined {
   return hex;
 }
 
-function readableHex(hex: string): string {
+function readableHex(hex: string): string | undefined {
   const n = parseInt(hex, 16);
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return lum < 0.22 ? '#e6edf3' : `#${hex}`;
+  return lum < 0.22 ? undefined : `#${hex}`;
 }
 
 /** Библиотека своих иконок (локально в браузере) — для повторного использования */

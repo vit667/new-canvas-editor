@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useProjectsStore, type CanvasProject } from '@/store/projectsStore';
+import { useProjectsStore, type CanvasProject, type ViewMode } from '@/store/projectsStore';
 import type { Node, Edge } from 'reactflow';
 
 // Функция для получения WebSocket URL
@@ -89,7 +89,7 @@ export function useWebSocketSync(enabled: boolean = true) {
             }
 
             case 'project_updated': {
-              const data = message.data as { projectId: string; nodes: Node[]; edges: Edge[]; viewMode?: 'canvas' | 'table' | 'cmdb' };
+              const data = message.data as { projectId: string; nodes: Node[]; edges: Edge[]; viewMode?: ViewMode };
               const { projectId, nodes, edges, viewMode } = data;
               
               // Обновляем только если это не текущий проект (чтобы избежать циклов)
@@ -190,7 +190,7 @@ export function useWebSocketSync(enabled: boolean = true) {
   };
 
   // Функция для отправки обновления проекта
-  const syncProject = (projectId: string, nodes: Node[], edges: Edge[], viewMode?: 'canvas' | 'table' | 'cmdb') => {
+  const syncProject = (projectId: string, nodes: Node[], edges: Edge[], viewMode?: ViewMode) => {
     sendMessage({
       type: 'update_project',
       data: { projectId, nodes, edges, viewMode },

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Node, Edge } from 'reactflow';
 
-export type ViewMode = 'canvas' | 'table' | 'cmdb';
+export type ViewMode = 'canvas' | 'table' | 'cmdb' | 'inventory';
 
 export interface CanvasProject {
   id: string;
@@ -34,6 +34,10 @@ interface ProjectsState {
   updateCurrentProject: (nodes: Node[], edges: Edge[]) => void;
   setViewMode: (mode: ViewMode) => void;
   setCanvasStyle: (style: CanvasStyle) => void;
+  /** Заменить узлы любого проекта (миграция в реестр, перенос правок между схемами) */
+  setProjectNodes: (id: string, nodes: Node[]) => void;
+  /** Сохранить граф конкретной схемы (не «текущей») */
+  updateProjectGraph: (id: string, nodes: Node[], edges: Edge[]) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>()(
@@ -126,6 +130,18 @@ export const useProjectsStore = create<ProjectsState>()(
               ? { ...p, viewMode: mode, updatedAt: Date.now() }
               : p
           ),
+        }));
+      },
+
+      updateProjectGraph: (id, nodes, edges) => {
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === id ? { ...p, nodes, edges, updatedAt: Date.now() } : p)),
+        }));
+      },
+
+      setProjectNodes: (id, nodes) => {
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === id ? { ...p, nodes, updatedAt: Date.now() } : p)),
         }));
       },
 

@@ -16,6 +16,8 @@ import {
   Group,
   ArrowLeftRight,
   FileCode,
+  Boxes,
+  Grid3x3,
 } from "lucide-react";
 
 import { Separator } from "@/components/ui/separator";
@@ -32,7 +34,7 @@ import { useProjectsStore } from "@/store/projectsStore";
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar();
   const { selectedNode, selectedEdge, nodesCount, isConnected, actions } = useCanvasToolbarStore();
-  const { getCurrentProject, setViewMode } = useProjectsStore();
+  const { getCurrentProject, setViewMode, setCanvasStyle } = useProjectsStore();
   const currentProject = getCurrentProject();
 
   return (
@@ -75,6 +77,15 @@ export function SiteHeader() {
                 className="h-7 w-7"
               >
                 <Table2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant={currentProject.viewMode === "inventory" ? "default" : "ghost"}
+                onClick={() => setViewMode("inventory")}
+                title="Реестр"
+                className="h-7 w-7"
+              >
+                <Boxes className="h-3.5 w-3.5" />
               </Button>
             </div>
 
@@ -124,6 +135,17 @@ export function SiteHeader() {
                     </Button>
                   </>
                 )}
+
+                <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+                <Button
+                  onClick={() => setCanvasStyle(currentProject.canvasStyle === "blueprint" ? "default" : "blueprint")}
+                  size="icon"
+                  variant={currentProject.canvasStyle === "blueprint" ? "default" : "ghost"}
+                  title="Тёмная схема (blueprint)"
+                  className="h-7 w-7"
+                >
+                  <Grid3x3 className="h-3.5 w-3.5" />
+                </Button>
 
                 <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4 hidden sm:block" />
                 <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
