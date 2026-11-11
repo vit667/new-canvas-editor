@@ -15,6 +15,7 @@ import ReactFlow, {
   type Node,
   type NodeChange,
   type NodePositionChange,
+  type OnConnectStartParams,
   BackgroundVariant,
   getNodesBounds,
 } from 'reactflow';
@@ -48,7 +49,12 @@ import LinkEdge from './edges/LinkEdge';
 import DeviceNode from './nodes/blueprint/DeviceNode';
 import SectionNode from './nodes/blueprint/SectionNode';
 import NetworksNode from './nodes/blueprint/NetworksNode';
-import SwitchNode, { portIdFromHandle, type SwitchPort } from './nodes/blueprint/SwitchNode';
+import SwitchNode, { portHandleId, portIdFromHandle, type SwitchPort } from './nodes/blueprint/SwitchNode';
+import { PortPickerDialog } from './PortPickerDialog';
+import { toast } from 'sonner';
+import { useInventoryLookups } from '@/lib/inventory/hooks';
+import { linkWarnings, portFromNode } from '@/lib/inventory/ports';
+import { localPortUse, portStatuses } from '@/lib/inventory/port-occupancy';
 import SpecsNode from './nodes/blueprint/SpecsNode';
 import ServiceNode from './nodes/blueprint/ServiceNode';
 import TableNode from './nodes/blueprint/TableNode';
@@ -56,7 +62,7 @@ import LegendNode from './nodes/blueprint/LegendNode';
 import CloudNode from './nodes/blueprint/CloudNode';
 import ExternalNode from './nodes/blueprint/ExternalNode';
 import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
-import { releaseOrphans, reparentNodes } from '@/lib/nesting';
+import { absolutePositionOf, releaseOrphans, reparentNodes } from '@/lib/nesting';
 import { stripEntityIds } from '@/lib/inventory/diagram-sync';
 import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
@@ -356,18 +362,52 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
     [setEdges]
   );
 
-  const onConnect = useCallback(
+  // Реестр: чтобы видеть порты, занятые на других схемах
+  const lookups = useInventoryLookups();
+  // Связь брошена на коммутатор мимо портов — спрашиваем порт
+  const [portPicker, setPortPicker] = useState<{ params: Connection; side: 'source' | 'target'; nodeId: string } | null>(null);
+
+  const findPort = useCallback(
+    (nodeId: string | null, handle: string | null | undefined): SwitchPort | undefined => {
+      const portId = portIdFromHandle(handle);
+      if (!nodeId || !portId) return undefined;
+      const n = nodes.find((x) => x.id === nodeId);
+      return (n?.data?.ports as SwitchPort[] | undefined)?.find((p) => p.id === portId);
+    },
+    [nodes]
+  );
+
+  const portStatusesOf = useCallback(
+    (nodeId: string) => {
+      const n = nodes.find((x) => x.id === nodeId);
+      const local = new Map([...localPortUse(nodeId, edges)].map(([p, other]) => [p, (nodes.find((x) => x.id === other)?.data?.label as string) || other]));
+      return portStatuses((n?.data?.ports as SwitchPort[]) || [], local, lookups, (label) => label);
+    },
+    [nodes, edges, lookups]
+  );
+
+  /** Создать сетевую связь и показать предупреждения о совместимости портов */
+  const createLink = useCallback(
     (params: Connection) => {
-      if (blueprint) {
-        // Если связь тянется от порта коммутатора — берём VLAN / trunk / скорость порта
-        const findPort = (nodeId: string | null, handle: string | null | undefined): SwitchPort | undefined => {
-          const portId = portIdFromHandle(handle);
-          if (!nodeId || !portId) return undefined;
-          const n = nodes.find((x) => x.id === nodeId);
-          return (n?.data?.ports as SwitchPort[] | undefined)?.find((p) => p.id === portId);
-        };
-        const port = findPort(params.source, params.sourceHandle) || findPort(params.target, params.targetHandle);
-        setEdges((eds) =>
+      const a = findPort(params.source, params.sourceHandle);
+      const b = findPort(params.target, params.targetHandle);
+      const port = a || b;
+      const vlanName = (id?: string) => useNetworksStore.getState().networks.find((n) => n.id === id)?.name ?? id ?? '';
+      const label = (nodeId: string | null, p: SwitchPort) => `${(nodes.find((n) => n.id === nodeId)?.data?.label as string) ?? ''} · ${p.name}`;
+      const warnings = linkWarnings(
+        a ? { ...portFromNode(a), name: label(params.source, a) } : undefined,
+        b ? { ...portFromNode(b), name: label(params.target, b) } : undefined,
+        vlanName
+      );
+      // Порт занят на другой схеме (по реестру)
+      for (const [nodeId, p] of [[params.source, a], [params.target, b]] as const) {
+        if (!p || !nodeId) continue;
+        const st = portStatusesOf(nodeId).get(p.id);
+        if (st?.state === 'remote') warnings.push(`${label(nodeId, p)} уже подключён на другой схеме → ${st.peer}`);
+      }
+      if (warnings.length) toast.warning('Проверьте подключение', { description: warnings.join('\n') });
+
+      setEdges((eds) =>
           addEdge(
             {
               ...params,
@@ -383,6 +423,52 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
             eds
           )
         );
+    },
+    [findPort, portStatusesOf, nodes, setEdges]
+  );
+
+  // Связь бросили не на точку подключения: React Flow не вызывает onConnect.
+  // Запоминаем начало, а в onConnectEnd смотрим, не коммутатор ли под курсором.
+  const connectStart = useRef<OnConnectStartParams | null>(null);
+  const connectMade = useRef(false);
+  const onConnectStart = useCallback((_: unknown, params: OnConnectStartParams) => {
+    connectStart.current = params;
+    connectMade.current = false;
+  }, []);
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const start = connectStart.current;
+      connectStart.current = null;
+      if (!blueprint || connectMade.current || !start?.nodeId) return;
+      const point = 'changedTouches' in event ? event.changedTouches[0] : event;
+      const el = document.elementFromPoint(point.clientX, point.clientY)?.closest('.react-flow__node');
+      const targetId = el?.getAttribute('data-id');
+      if (!targetId || targetId === start.nodeId) return;
+      if (nodes.find((n) => n.id === targetId)?.type !== 'switch') return;
+      const params: Connection =
+        start.handleType === 'target'
+          ? { source: targetId, sourceHandle: null, target: start.nodeId, targetHandle: start.handleId }
+          : { source: start.nodeId, sourceHandle: start.handleId, target: targetId, targetHandle: null };
+      setPortPicker({ params, side: start.handleType === 'target' ? 'source' : 'target', nodeId: targetId });
+    },
+    [blueprint, nodes]
+  );
+
+  const onConnect = useCallback(
+    (params: Connection) => {
+      connectMade.current = true;
+      if (blueprint) {
+        // Брошено на коммутатор, но не в порт — предлагаем выбрать порт
+        const isSwitch = (id: string | null) => !!id && nodes.find((n) => n.id === id)?.type === 'switch';
+        if (isSwitch(params.target) && !portIdFromHandle(params.targetHandle)) {
+          setPortPicker({ params, side: 'target', nodeId: params.target! });
+          return;
+        }
+        if (isSwitch(params.source) && !portIdFromHandle(params.sourceHandle)) {
+          setPortPicker({ params, side: 'source', nodeId: params.source! });
+          return;
+        }
+        createLink(params);
         return;
       }
       setEdges((eds) => {
@@ -413,7 +499,27 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         }));
       });
     },
-    [setEdges, blueprint, nodes]
+    [setEdges, blueprint, nodes, createLink]
+  );
+
+  /** Порт выбран в окне: ставим связь в ближнюю к соседу сторону порта */
+  const pickPort = useCallback(
+    (portId: string) => {
+      if (!portPicker) return;
+      const { params, side, nodeId } = portPicker;
+      const sw = nodes.find((n) => n.id === nodeId);
+      const other = nodes.find((n) => n.id === (side === 'target' ? params.source : params.target));
+      const swY = sw ? absolutePositionOf(sw, nodes).y : 0;
+      const swH = sw?.height ?? 0;
+      const otherY = (other ? absolutePositionOf(other, nodes).y : 0) + (other?.height ?? 0) / 2;
+      const portsOnTop = (sw?.data?.portSide ?? 'bottom') === 'top';
+      // Порты снизу: сосед выше середины карточки → верхняя («дальняя») точка порта
+      const far = portsOnTop ? otherY > swY + swH / 2 : otherY < swY + swH / 2;
+      const handle = portHandleId(portId, side, far);
+      createLink(side === 'target' ? { ...params, targetHandle: handle } : { ...params, sourceHandle: handle });
+      setPortPicker(null);
+    },
+    [portPicker, nodes, createLink]
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -1725,6 +1831,8 @@ svg.react-flow__edges {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
           onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
@@ -1823,6 +1931,21 @@ svg.react-flow__edges {
           }}
         />
       )}
+      {portPicker && (
+        <PortPickerDialog
+          open
+          deviceName={(nodes.find((n) => n.id === portPicker.nodeId)?.data?.label as string) ?? 'коммутатор'}
+          ports={(nodes.find((n) => n.id === portPicker.nodeId)?.data?.ports as SwitchPort[]) ?? []}
+          statuses={portStatusesOf(portPicker.nodeId)}
+          onPick={pickPort}
+          onWithoutPort={() => {
+            createLink(portPicker.params);
+            setPortPicker(null);
+          }}
+          onCancel={() => setPortPicker(null)}
+        />
+      )}
+
       <NodeTypePicker
         isOpen={isNodeTypePickerOpen}
         onClose={() => { setIsNodeTypePickerOpen(false); setPendingNodePosition(null); }}

@@ -1,5 +1,7 @@
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from 'reactflow';
+import { memo, useCallback, useMemo } from 'react';
+import { Handle, Position, useStore, type NodeProps, type ReactFlowState } from 'reactflow';
+import { useInventoryLookups } from '@/lib/inventory/hooks';
+import { localPortUse, portStatuses, type PortStatus } from '@/lib/inventory/port-occupancy';
 import { BP, alpha, useNetworksStore, type BlueprintNetwork, type LinkSpeed } from '@/lib/blueprint';
 import { IconTile } from '@/components/ui/icon-tile';
 import AppIcon from '../../AppIcon';
@@ -16,6 +18,8 @@ export interface SwitchPort {
   trunk?: boolean;
   speed?: LinkSpeed;
   disabled?: boolean;
+  /** id интерфейса в реестре (проставляет синхронизация) */
+  entityId?: string;
 }
 
 export interface SwitchNodeData {
@@ -45,8 +49,36 @@ export const portIdFromHandle = (handle?: string | null) =>
 
 const visibleHandle = { visibility: 'visible' as const, pointerEvents: 'all' as const };
 
-function Port({ port, net, side, ghost = false }: { port: SwitchPort; net?: BlueprintNetwork; side: 'bottom' | 'top'; ghost?: boolean }) {
+const STATE_LABEL: Record<PortStatus['state'], string> = {
+  free: 'свободен',
+  busy: 'подключён',
+  remote: 'занят на другой схеме',
+  off: 'выключен',
+};
+const STATE_DOT: Partial<Record<PortStatus['state'], string>> = { busy: '#4f9cf9', remote: '#d29922' };
+
+function Port({
+  port,
+  net,
+  side,
+  ghost = false,
+  status,
+  connecting,
+}: {
+  port: SwitchPort;
+  net?: BlueprintNetwork;
+  side: 'bottom' | 'top';
+  ghost?: boolean;
+  status?: PortStatus;
+  /** Сейчас тянут связь к этому коммутатору — подсвечиваем свободные порты */
+  connecting?: boolean;
+}) {
   const color = port.disabled ? BP.border : port.trunk ? BP.text : net?.color || BP.muted;
+  const state = status?.state ?? 'free';
+  // Занятый на этой схеме порт не принимает вторую связь
+  const connectable = state !== 'busy';
+  const highlight = connecting ? (state === 'free' ? '#3fb950' : state === 'remote' ? '#d29922' : undefined) : undefined;
+  const dim = connecting && (state === 'busy' || state === 'off');
   const isSfp = port.kind === 'sfp';
   const pos = side === 'top' ? Position.Top : Position.Bottom;
   const edgeOffset = side === 'top' ? { top: -PORT_EDGE_OFFSET } : { bottom: -PORT_EDGE_OFFSET };
@@ -73,28 +105,49 @@ function Port({ port, net, side, ghost = false }: { port: SwitchPort; net?: Blue
     <div className={ghost ? 'invisible relative flex flex-col items-center gap-1' : 'relative flex flex-col items-center gap-1'}>
       {ghost ? (
         <>
-          <Handle type="source" position={farPos} id={portHandleId(port.id, 'source', true)} className="bp-handle bp-port-handle" style={visibleHandle} />
-          <Handle type="target" position={farPos} id={portHandleId(port.id, 'target', true)} className="bp-handle bp-port-handle" style={visibleHandle} />
+          <Handle type="source" position={farPos} id={portHandleId(port.id, 'source', true)} className="bp-handle bp-port-handle" style={visibleHandle} isConnectableStart={connectable} isConnectableEnd={connectable} />
+          <Handle type="target" position={farPos} id={portHandleId(port.id, 'target', true)} className="bp-handle bp-port-handle" style={visibleHandle} isConnectableStart={connectable} isConnectableEnd={connectable} />
         </>
       ) : (
         <>
           {/* Точки подключения — на краю карточки, напротив порта (отступ = padding карточки) */}
-          <Handle type="source" position={pos} id={portHandleId(port.id, 'source')} className="bp-handle bp-port-handle" style={edgeOffset} />
-          <Handle type="target" position={pos} id={portHandleId(port.id, 'target')} className="bp-handle bp-port-handle" style={edgeOffset} />
+          <Handle type="source" position={pos} id={portHandleId(port.id, 'source')} className="bp-handle bp-port-handle" style={edgeOffset} isConnectableStart={connectable} isConnectableEnd={connectable} />
+          <Handle type="target" position={pos} id={portHandleId(port.id, 'target')} className="bp-handle bp-port-handle" style={edgeOffset} isConnectableStart={connectable} isConnectableEnd={connectable} />
         </>
       )}
       {side === 'bottom' ? name : label}
       <div
-        className="relative flex items-end justify-center rounded-[4px] border-2"
-        title={[port.name, port.label, net && `${net.tag} · ${net.name}`, port.trunk && 'trunk', port.speed].filter(Boolean).join(' · ')}
+        className="relative flex items-end justify-center rounded-[4px] border-2 transition-[opacity,box-shadow]"
+        title={[
+          `Порт ${port.name}`,
+          port.label,
+          net && `${net.tag} · ${net.name}`,
+          port.trunk && 'trunk',
+          port.speed,
+          STATE_LABEL[state] + (status?.peer ? ` → ${status.peer}` : ''),
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         style={{
           width: isSfp ? 40 : 28,
           height: 24,
           borderColor: color,
           background: port.disabled ? 'transparent' : alpha(color, 0.12),
-          boxShadow: port.trunk ? `inset 0 0 0 2px ${BP.bg}, inset 0 0 0 3px ${alpha(color, 0.6)}` : undefined,
+          opacity: dim ? 0.35 : 1,
+          boxShadow: [
+            port.trunk ? `inset 0 0 0 2px ${BP.bg}, inset 0 0 0 3px ${alpha(color, 0.6)}` : '',
+            highlight ? `0 0 0 2px ${BP.bg}, 0 0 0 4px ${highlight}, 0 0 12px ${alpha(highlight, 0.6)}` : '',
+          ]
+            .filter(Boolean)
+            .join(', ') || undefined,
         }}
       >
+        {!ghost && STATE_DOT[state] && (
+          <span
+            className="absolute -top-1 -right-1 size-2 rounded-full"
+            style={{ background: STATE_DOT[state], boxShadow: `0 0 0 2px ${BP.panel}` }}
+          />
+        )}
         {/* «Защёлка» RJ45 / щель SFP */}
         <div
           className="mb-[3px] rounded-[1px]"
@@ -107,8 +160,30 @@ function Port({ port, net, side, ghost = false }: { port: SwitchPort; net?: Blue
 }
 
 /** Коммутатор/роутер с портами: каждый порт — отдельная точка подключения с цветом VLAN */
-function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
+function SwitchNode({ id, data, selected }: NodeProps<SwitchNodeData>) {
   const networks = useNetworksStore((s) => s.networks);
+  const lk = useInventoryLookups();
+
+  // Порты, занятые связями на этой схеме: «порт=подпись соседа» строкой —
+  // строка сравнивается по значению, и узел не перерисовывается на каждом кадре перетаскивания
+  const usedKey = useStore(
+    useCallback(
+      (s: ReactFlowState) =>
+        JSON.stringify(
+          [...localPortUse(id, s.edges)]
+            .map(([p, n]) => [p, (s.nodeInternals.get(n)?.data?.label as string) || n])
+            .sort()
+        ),
+      [id]
+    )
+  );
+  // Тянут ли сейчас связь к этому узлу (от другого узла)
+  const connecting = useStore(useCallback((s: ReactFlowState) => !!s.connectionNodeId && s.connectionNodeId !== id, [id]));
+  const statuses = useMemo(() => {
+    const local = new Map(JSON.parse(usedKey) as [string, string][]);
+    // В local уже подписи соседей — отдаём их как есть
+    return portStatuses(data.ports || [], local, lk, (label) => label);
+  }, [usedKey, data.ports, lk]);
   const mgmt = networks.find((n) => n.id === data.vlanId);
   const accent = mgmt?.color || data.accent || BP.neutral;
   const side = data.portSide || 'bottom';
@@ -117,7 +192,7 @@ function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
   const portsRow = ports.length > 0 && (
     <div className="flex flex-wrap items-start gap-1.5">
       {ports.map((p) => (
-        <Port key={p.id} port={p} side={side} net={networks.find((n) => n.id === p.vlanId)} />
+        <Port key={p.id} port={p} side={side} net={networks.find((n) => n.id === p.vlanId)} status={statuses.get(p.id)} connecting={connecting} />
       ))}
     </div>
   );
@@ -137,7 +212,7 @@ function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
       {ports.length > 0 && (
         <div className={`pointer-events-none absolute right-3 left-3 flex flex-wrap items-start gap-1.5 ${side === 'top' ? 'bottom-0' : 'top-0'}`}>
           {ports.map((p) => (
-            <Port key={p.id} port={p} side={side} ghost net={networks.find((n) => n.id === p.vlanId)} />
+            <Port key={p.id} port={p} side={side} ghost net={networks.find((n) => n.id === p.vlanId)} status={statuses.get(p.id)} />
           ))}
         </div>
       )}

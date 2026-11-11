@@ -129,3 +129,19 @@ export function releaseOrphans(nodes: Node[]): Node[] {
       : n
   );
 }
+
+/** Абсолютная позиция узла с учётом вложенности (positionAbsolute в сохранённых узлах может не быть) */
+export function absolutePositionOf(node: Node, nodes: Node[]): { x: number; y: number } {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  let x = node.position.x;
+  let y = node.position.y;
+  const seen = new Set<string>([node.id]);
+  let parent = node.parentId ? byId.get(node.parentId) : undefined;
+  while (parent && !seen.has(parent.id)) {
+    seen.add(parent.id);
+    x += parent.position.x;
+    y += parent.position.y;
+    parent = parent.parentId ? byId.get(parent.parentId) : undefined;
+  }
+  return { x, y };
+}

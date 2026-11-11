@@ -1,5 +1,6 @@
 import type { Entity, InventoryState, Relation, ValidationIssue } from './types';
 import { buildPrefixTree, cidrHasIp, intToIp, ipToInt, parseCidr, parseRange, vrfOf } from './ipam';
+import { linkWarnings, portFromInterface } from './ports';
 
 /**
  * Проверки целостности реестра (docs/INVENTORY_MODEL.md §6).
@@ -249,7 +250,26 @@ const ipPlacement: Rule = (ctx) => {
   return issues;
 };
 
+/** Совместимость концов кабеля: среда, скорость, режим, VLAN, выключенный порт — предупреждения */
+const cableCompat: Rule = (ctx) => {
+  const issues: ValidationIssue[] = [];
+  const vlanName = (id?: string) => (id ? ctx.state.entities[id]?.name ?? id : '');
+  for (const c of byKind(ctx, 'cable')) {
+    const a = c.attrs.aInterfaceId ? ctx.state.entities[c.attrs.aInterfaceId] : undefined;
+    const b = c.attrs.bInterfaceId ? ctx.state.entities[c.attrs.bInterfaceId] : undefined;
+    if (a?.kind !== 'interface' || b?.kind !== 'interface') continue;
+    const dev = (i: Entity<'interface'>) => (i.attrs.deviceId ? ctx.state.entities[i.attrs.deviceId]?.name : undefined) ?? '?';
+    const pa = { ...portFromInterface(a), name: `${dev(a)} · ${a.name}` };
+    const pb = { ...portFromInterface(b), name: `${dev(b)} · ${b.name}` };
+    for (const message of linkWarnings(pa, pb, vlanName)) {
+      issues.push({ level: 'warning', rule: 'cable-compat', message, entityIds: [c.id, a.id, b.id] });
+    }
+  }
+  return issues;
+};
+
 export const RULES: Rule[] = [
+  cableCompat,
   relationEndpoints, containsNoCycles, cablePerInterface, serialUnique, vlanVid,
   prefixSyntax, ipSyntax, ipUnique, prefixDuplicates, prefixGatewayDhcp, ipPlacement,
 ];

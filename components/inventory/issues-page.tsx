@@ -27,6 +27,7 @@ const RULE_LABELS: Record<string, string> = {
   "ip-outside-ipam": "Адрес вне подсетей",
   "ip-network-broadcast": "Адрес сети / broadcast",
   "ip-in-dhcp": "Адрес в DHCP-пуле",
+  "cable-compat": "Несовместимые порты",
 }
 
 /** Все проблемы реестра, найденные проверками (docs/INVENTORY_MODEL.md §6) */

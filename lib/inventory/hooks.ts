@@ -43,3 +43,18 @@ export function useInventoryIssues(): ValidationIssue[] {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => (hydrated ? getInventory().validate() : EMPTY), [rev, hydrated]);
 }
+
+// Сводки реестра (кто к чему подключён) — общие на всё приложение, пересчёт раз на версию
+import { buildLookups, type InventoryLookups } from './views';
+let lookupsCache: { rev: number; lk: InventoryLookups } | null = null;
+
+export function useInventoryLookups(): InventoryLookups | null {
+  const rev = useInventoryRevision();
+  const hydrated = useHydrated();
+  if (!hydrated) return null;
+  if (!lookupsCache || lookupsCache.rev !== rev) {
+    const repo = getInventory();
+    lookupsCache = { rev, lk: buildLookups(repo.list(), repo.relations()) };
+  }
+  return lookupsCache.lk;
+}
