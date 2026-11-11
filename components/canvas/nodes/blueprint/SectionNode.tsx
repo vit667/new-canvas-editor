@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { NodeResizer, type NodeProps } from 'reactflow';
-import { getIconComponent } from '@/lib/canvas-icons';
+import AppIcon from '../../AppIcon';
 import { BP, alpha, useNetwork } from '@/lib/blueprint';
 import { IconTile } from '@/components/ui/icon-tile';
 import { BlueprintHandles } from './BlueprintHandles';
@@ -28,9 +28,9 @@ export interface SectionNodeData {
 function SectionNode({ data, selected }: NodeProps<SectionNodeData>) {
   const network = useNetwork(data.vlanId);
   const accent = network?.color || data.accent || BP.muted;
-  const Icon = getIconComponent(data.icon);
+  const hasIcon = !!data.icon && data.icon !== 'none';
   const tag = data.tag || (network ? `${network.tag} · ${network.name}` : '');
-  const hasHeaderRow = Icon || data.subtitle || data.ip || data.hostname;
+  const hasHeaderRow = hasIcon || data.subtitle || data.ip || data.hostname;
 
   return (
     <div className="relative h-full w-full">
@@ -78,9 +78,9 @@ function SectionNode({ data, selected }: NodeProps<SectionNodeData>) {
 
         {hasHeaderRow && (
           <div className="bp-section-drag flex cursor-move items-center gap-2.5 px-4 pt-5">
-            {Icon && (
+            {hasIcon && (
               <IconTile variant="soft" size="default" className="[--icon-tile-radius:9px]" style={{ color: accent }}>
-                <Icon />
+                <AppIcon value={data.icon} className="size-[18px]" />
               </IconTile>
             )}
             <div className="leading-tight">

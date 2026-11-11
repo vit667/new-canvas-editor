@@ -4,7 +4,7 @@
       "id": "nets",
       "type": "networks",
       "position": {
-        "x": -360,
+        "x": -420,
         "y": 0
       },
       "data": {
@@ -51,6 +51,14 @@
             "color": "#d29922"
           },
           {
+            "id": "vpn",
+            "tag": "WireGuard",
+            "name": "VPN",
+            "cidr": "10.0.50.0/24",
+            "description": "split tunnel · LAN-like access",
+            "color": "#39c5cf"
+          },
+          {
             "id": "wan",
             "tag": "Fritzbox",
             "name": "WAN",
@@ -63,16 +71,131 @@
       "zIndex": 10
     },
     {
+      "id": "legend",
+      "type": "legend",
+      "position": {
+        "x": -420,
+        "y": 470
+      },
+      "data": {
+        "label": "Legend",
+        "showKinds": true,
+        "showSpeeds": true,
+        "showNetworks": false
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "ports",
+      "type": "table",
+      "position": {
+        "x": 1060,
+        "y": 0
+      },
+      "data": {
+        "label": "Open to the internet",
+        "subtitle": "port forwards on OPNsense · CrowdSec drops bad IPs first",
+        "rows": [
+          {
+            "id": "r1",
+            "key": "80, 443",
+            "title": "Traefik",
+            "note": "every *.example.com site",
+            "tags": "TCP, UDP"
+          },
+          {
+            "id": "r2",
+            "key": "22",
+            "title": "Forgejo",
+            "note": "git over SSH (→ :2222)",
+            "tags": "TCP"
+          },
+          {
+            "id": "r3",
+            "key": "51820",
+            "title": "WireGuard",
+            "note": "remote access VPN",
+            "tags": "UDP"
+          },
+          {
+            "id": "r4",
+            "key": "64001",
+            "title": "qBittorrent",
+            "note": "incoming peers",
+            "tags": "TCP, UDP"
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "fritz",
+      "type": "switch",
+      "position": {
+        "x": 380,
+        "y": -250
+      },
+      "data": {
+        "label": "FRITZ!Box",
+        "role": "ISP router",
+        "icon": "si:avm",
+        "model": "AVM FRITZ!Box 6660 Cable",
+        "ip": "192.168.178.1",
+        "os": "FRITZ!OS 8.25",
+        "vlanId": "wan",
+        "portSide": "bottom",
+        "ports": [
+          {
+            "id": "cable",
+            "name": "Cable",
+            "label": "internet",
+            "kind": "sfp",
+            "vlanId": "wan"
+          },
+          {
+            "id": "f1",
+            "name": "2.5G",
+            "label": "exposed host",
+            "kind": "rj45",
+            "vlanId": "wan",
+            "speed": "2.5G"
+          },
+          {
+            "id": "f2",
+            "name": "1G",
+            "label": "",
+            "kind": "rj45",
+            "disabled": true
+          },
+          {
+            "id": "f3",
+            "name": "1G",
+            "label": "",
+            "kind": "rj45",
+            "disabled": true
+          },
+          {
+            "id": "f4",
+            "name": "1G",
+            "label": "",
+            "kind": "rj45",
+            "disabled": true
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
       "id": "fw",
       "type": "device",
       "position": {
-        "x": 360,
-        "y": 0
+        "x": 400,
+        "y": 10
       },
       "data": {
         "label": "OPNsense",
         "role": "router/firewall",
-        "icon": "shield",
+        "icon": "si:opnsense",
         "model": "Lenovo thin client",
         "ip": "10.0.99.1",
         "hostname": "opnsense.internal",
@@ -83,20 +206,103 @@
     },
     {
       "id": "sw",
-      "type": "device",
+      "type": "switch",
       "position": {
-        "x": 360,
+        "x": 190,
         "y": 220
       },
       "data": {
         "label": "MikroTik",
         "role": "switch",
-        "icon": "network",
-        "model": "CRS310-8G+2S+",
+        "icon": "si:mikrotik",
+        "model": "MikroTik CRS310-8G+2S+",
         "ip": "10.0.99.2",
         "hostname": "mikrotik.internal",
         "os": "RouterOS 7.20",
-        "vlanId": "mgmt"
+        "note": "pure L2 switch",
+        "vlanId": "mgmt",
+        "portSide": "bottom",
+        "ports": [
+          {
+            "id": "p1",
+            "name": "1",
+            "label": "OPNsense",
+            "kind": "rj45",
+            "trunk": true,
+            "speed": "2.5G"
+          },
+          {
+            "id": "p2",
+            "name": "2",
+            "label": "OPNsense",
+            "kind": "rj45",
+            "trunk": true,
+            "speed": "2.5G"
+          },
+          {
+            "id": "p3",
+            "name": "3",
+            "label": "MADCAT",
+            "kind": "rj45",
+            "vlanId": "lan",
+            "speed": "2.5G"
+          },
+          {
+            "id": "p4",
+            "name": "4",
+            "label": "free",
+            "kind": "rj45",
+            "disabled": true
+          },
+          {
+            "id": "p5",
+            "name": "5",
+            "label": "JetKVM",
+            "kind": "rj45",
+            "vlanId": "lan",
+            "speed": "100M"
+          },
+          {
+            "id": "p6",
+            "name": "6",
+            "label": "U7 Lite",
+            "kind": "rj45",
+            "trunk": true,
+            "speed": "2.5G"
+          },
+          {
+            "id": "p7",
+            "name": "7",
+            "label": "SLZB-MR4",
+            "kind": "rj45",
+            "vlanId": "iot",
+            "speed": "100M"
+          },
+          {
+            "id": "p8",
+            "name": "8",
+            "label": "rescue",
+            "kind": "rj45",
+            "vlanId": "mgmt",
+            "speed": "1G"
+          },
+          {
+            "id": "sfp1",
+            "name": "SFP+1",
+            "label": "MADCAT",
+            "kind": "sfp",
+            "vlanId": "lan",
+            "speed": "10G"
+          },
+          {
+            "id": "sfp2",
+            "name": "SFP+2",
+            "label": "terra",
+            "kind": "sfp",
+            "trunk": true,
+            "speed": "10G"
+          }
+        ]
       },
       "zIndex": 10
     },
@@ -104,13 +310,13 @@
       "id": "pc",
       "type": "device",
       "position": {
-        "x": 0,
-        "y": 460
+        "x": -40,
+        "y": 560
       },
       "data": {
         "label": "MADCAT",
         "role": "workstation",
-        "icon": "monitor",
+        "icon": "si:cachyos",
         "model": "Gaming PC",
         "ip": "10.0.10.30",
         "hostname": "madcat.internal",
@@ -123,13 +329,13 @@
       "id": "ap",
       "type": "device",
       "position": {
-        "x": 360,
-        "y": 460
+        "x": 560,
+        "y": 560
       },
       "data": {
         "label": "U7 Lite",
         "role": "access point",
-        "icon": "wifi",
+        "icon": "si:ubiquiti",
         "model": "UniFi U7 Lite · Wi-Fi 7",
         "ip": "10.0.99.62",
         "hostname": "u7lite.internal",
@@ -158,40 +364,126 @@
       "id": "srv",
       "type": "section",
       "position": {
-        "x": 0,
-        "y": 720
+        "x": -40,
+        "y": 840
       },
       "data": {
         "label": "terra",
         "role": "server",
-        "icon": "server",
+        "icon": "si:proxmox",
         "subtitle": "Proxmox Server",
         "ip": "10.0.10.20",
         "hostname": "terra.internal",
-        "vlanId": "dmz",
+        "tag": "Proxmox VE 9.2",
+        "vlanId": "lan",
         "variant": "solid"
       },
       "zIndex": 1,
       "style": {
-        "width": 760,
-        "height": 300
+        "width": 1000,
+        "height": 420
       },
       "dragHandle": ".bp-section-drag"
     },
     {
-      "id": "jf",
-      "type": "device",
+      "id": "hw",
+      "type": "specs",
       "position": {
-        "x": 30,
+        "x": 20,
         "y": 90
       },
       "data": {
+        "label": "Hardware",
+        "accent": "#d29922",
+        "columns": 1,
+        "tiles": [
+          {
+            "id": "t1",
+            "icon": "cpu",
+            "category": "CPU",
+            "value": "Ryzen 9 9900X",
+            "detail": "12 cores · 24 threads"
+          },
+          {
+            "id": "t2",
+            "icon": "memorystick",
+            "category": "Memory",
+            "value": "64 GB DDR5",
+            "detail": "~60 GB usable"
+          },
+          {
+            "id": "t3",
+            "icon": "ethernetport",
+            "category": "Network",
+            "value": "ConnectX-3 10G",
+            "detail": "SFP+ · VLAN-aware bridge"
+          },
+          {
+            "id": "t4",
+            "icon": "harddrive",
+            "category": "HDD",
+            "value": "7× Seagate Exos 16 TB",
+            "detail": "SATA · passthrough → TrueNAS"
+          }
+        ]
+      },
+      "zIndex": 10,
+      "parentId": "srv",
+      "extent": "parent"
+    },
+    {
+      "id": "edge",
+      "type": "service",
+      "position": {
+        "x": 290,
+        "y": 90
+      },
+      "data": {
+        "label": "Edge stack",
+        "subtitle": "reverse proxy · SSO · security",
+        "icon": "si:traefikproxy",
+        "badge": "CT 149",
+        "badgeSub": ".149",
+        "vlanId": "dmz",
+        "items": [
+          {
+            "id": "i1",
+            "icon": "si:traefikproxy",
+            "name": "Traefik",
+            "url": "traefik.example.com"
+          },
+          {
+            "id": "i2",
+            "icon": "si:authentik",
+            "name": "authentik",
+            "url": "auth.example.com"
+          },
+          {
+            "id": "i3",
+            "icon": "shield",
+            "name": "CrowdSec",
+            "url": "agent + AppSec WAF"
+          }
+        ]
+      },
+      "zIndex": 10,
+      "parentId": "srv",
+      "extent": "parent"
+    },
+    {
+      "id": "jf",
+      "type": "service",
+      "position": {
+        "x": 290,
+        "y": 270
+      },
+      "data": {
         "label": "Jellyfin",
-        "role": "media",
-        "icon": "monitor",
-        "model": "CT 152 · streams",
-        "ip": "10.0.20.152",
-        "hostname": "jellyfin.internal",
+        "subtitle": "streaming (iGPU) · stats",
+        "icon": "si:jellyfin",
+        "url": "jellyfin.example.com",
+        "badge": "CT 152",
+        "badgeSub": ".152",
         "vlanId": "dmz"
       },
       "zIndex": 10,
@@ -200,19 +492,47 @@
     },
     {
       "id": "ha",
-      "type": "device",
+      "type": "service",
       "position": {
-        "x": 400,
+        "x": 600,
         "y": 90
       },
       "data": {
-        "label": "Home Assistant",
-        "role": "VM 106",
-        "icon": "cpu",
-        "model": "2 vCPU · 4 GB",
-        "ip": "10.0.40.2",
-        "hostname": "ha.internal",
+        "label": "Home Assistant OS",
+        "subtitle": "Z2M · MQTT · Matter",
+        "icon": "si:homeassistant",
+        "url": "ha.example.com",
+        "badge": "VM 106",
+        "badgeSub": "10.0.40.2",
         "vlanId": "iot"
+      },
+      "zIndex": 10,
+      "parentId": "srv",
+      "extent": "parent"
+    },
+    {
+      "id": "ai",
+      "type": "service",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "label": "Open WebUI",
+        "subtitle": "local AI",
+        "icon": "bot",
+        "badge": "CT 134",
+        "badgeSub": ".134",
+        "vlanId": "dmz",
+        "lanOnly": true,
+        "items": [
+          {
+            "id": "o1",
+            "icon": "si:ollama",
+            "name": "Ollama",
+            "url": "local models"
+          }
+        ]
       },
       "zIndex": 10,
       "parentId": "srv",
@@ -221,11 +541,25 @@
   ],
   "edges": [
     {
-      "id": "e1",
-      "source": "fw",
-      "sourceHandle": "bottom-source",
-      "target": "sw",
+      "id": "w1",
+      "source": "fritz",
+      "sourceHandle": "port-f1-source",
+      "target": "fw",
       "targetHandle": "top-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "wan",
+        "speed": "1G"
+      }
+    },
+    {
+      "id": "l1",
+      "source": "sw",
+      "sourceHandle": "port-p1-source",
+      "target": "fw",
+      "targetHandle": "bottom-target",
       "type": "link",
       "zIndex": 10,
       "data": {
@@ -236,9 +570,9 @@
       }
     },
     {
-      "id": "e2",
+      "id": "l2",
       "source": "sw",
-      "sourceHandle": "left-source",
+      "sourceHandle": "port-sfp1-source",
       "target": "pc",
       "targetHandle": "top-target",
       "type": "link",
@@ -252,9 +586,9 @@
       }
     },
     {
-      "id": "e3",
+      "id": "l3",
       "source": "sw",
-      "sourceHandle": "bottom-source",
+      "sourceHandle": "port-p6-source",
       "target": "ap",
       "targetHandle": "top-target",
       "type": "link",
@@ -267,24 +601,23 @@
       }
     },
     {
-      "id": "e4",
+      "id": "l4",
       "source": "sw",
-      "sourceHandle": "right-source",
+      "sourceHandle": "port-sfp2-source",
       "target": "srv",
       "targetHandle": "top-target",
       "type": "link",
       "zIndex": 10,
       "data": {
         "routing": "step",
-        "kind": "access",
+        "kind": "trunk",
         "speed": "10G",
-        "vlanId": "dmz",
         "showSpeedLabel": true,
         "animated": true
       }
     },
     {
-      "id": "e5",
+      "id": "k1",
       "source": "pc",
       "sourceHandle": "bottom-source",
       "target": "srv",
@@ -299,5 +632,5 @@
     }
   ],
   "version": "1.0",
-  "exportedAt": "2026-11-11T09:07:33.233875+00:00"
+  "exportedAt": "2026-11-11T09:20:23.289524+00:00"
 }

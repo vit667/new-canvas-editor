@@ -349,3 +349,19 @@
 .react-flow__handle.bp-handle {
   border-color: #0d1117 !important;
 }
+
+.react-flow__node-switch,
+.react-flow__node-specs,
+.react-flow__node-service,
+.react-flow__node-table,
+.react-flow__node-legend {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Точки подключения портов — маленькие, у края порта */
+.react-flow__handle.bp-port-handle {
+  width: 8px !important;
+  height: 8px !important;
+}

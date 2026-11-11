@@ -108,6 +108,12 @@ import {
   Hash,
   Repeat,
   RefreshCw,
+  MemoryStick,
+  EthernetPort,
+  Usb,
+  Video,
+  Gamepad2,
+  Bot,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -194,6 +200,12 @@ export const iconOptions: IconOption[] = [
   { value: 'tablet', label: 'Планшет', Icon: Tablet },
   { value: 'printer', label: 'Принтер', Icon: Printer },
   { value: 'keyboard', label: 'Клавиатура', Icon: Keyboard },
+  { value: 'memorystick', label: 'Память', Icon: MemoryStick },
+  { value: 'ethernetport', label: 'Ethernet-порт', Icon: EthernetPort },
+  { value: 'usb', label: 'USB', Icon: Usb },
+  { value: 'video', label: 'Видео / камера', Icon: Video },
+  { value: 'gamepad', label: 'Игры', Icon: Gamepad2 },
+  { value: 'bot', label: 'ИИ / бот', Icon: Bot },
   { value: 'cpu', label: 'Процессор', Icon: Cpu },
   // Мониторинг и аналитика
   { value: 'activity', label: 'Мониторинг', Icon: Activity },

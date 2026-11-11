@@ -46,6 +46,11 @@ import LinkEdge from './edges/LinkEdge';
 import DeviceNode from './nodes/blueprint/DeviceNode';
 import SectionNode from './nodes/blueprint/SectionNode';
 import NetworksNode from './nodes/blueprint/NetworksNode';
+import SwitchNode, { portIdFromHandle, type SwitchPort } from './nodes/blueprint/SwitchNode';
+import SpecsNode from './nodes/blueprint/SpecsNode';
+import ServiceNode from './nodes/blueprint/ServiceNode';
+import TableNode from './nodes/blueprint/TableNode';
+import LegendNode from './nodes/blueprint/LegendNode';
 import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
 import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
@@ -68,6 +73,11 @@ const nodeTypes = {
   device: DeviceNode,
   section: SectionNode,
   networks: NetworksNode,
+  switch: SwitchNode,
+  specs: SpecsNode,
+  service: ServiceNode,
+  table: TableNode,
+  legend: LegendNode,
 };
 
 const edgeTypes = {
@@ -439,13 +449,26 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
   const onConnect = useCallback(
     (params: Connection) => {
       if (blueprint) {
+        // Если связь тянется от порта коммутатора — берём VLAN / trunk / скорость порта
+        const findPort = (nodeId: string | null, handle: string | null | undefined): SwitchPort | undefined => {
+          const portId = portIdFromHandle(handle);
+          if (!nodeId || !portId) return undefined;
+          const n = nodes.find((x) => x.id === nodeId);
+          return (n?.data?.ports as SwitchPort[] | undefined)?.find((p) => p.id === portId);
+        };
+        const port = findPort(params.source, params.sourceHandle) || findPort(params.target, params.targetHandle);
         setEdges((eds) =>
           addEdge(
             {
               ...params,
               type: 'link',
               zIndex: 10,
-              data: { routing: 'step', kind: 'access', speed: '1G' },
+              data: {
+                routing: 'step',
+                kind: port?.trunk ? 'trunk' : 'access',
+                speed: port?.speed || '1G',
+                vlanId: port && !port.trunk ? port.vlanId : undefined,
+              },
             },
             eds
           )
@@ -480,7 +503,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         }));
       });
     },
-    [setEdges, blueprint]
+    [setEdges, blueprint, nodes]
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -534,6 +557,31 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       device: { label: 'Устройство', role: 'server', icon: 'server', model: '', ip: '10.0.10.10', hostname: 'host.internal', os: '', vlanId: 'lan' },
       section: { label: 'Секция', role: 'server', icon: 'server', subtitle: '', vlanId: '', accent: '#8b96a5', variant: 'solid' },
       networks: { label: 'Сети', networks: DEFAULT_NETWORKS },
+      switch: {
+        label: 'Коммутатор', role: 'switch', icon: 'si:mikrotik', model: '', ip: '10.0.99.2', hostname: 'switch.internal', vlanId: 'mgmt', portSide: 'bottom',
+        ports: [
+          ...Array.from({ length: 8 }, (_, i) => ({ id: `p${i + 1}`, name: String(i + 1), label: '', kind: 'rj45', vlanId: 'lan', speed: '2.5G' })),
+          { id: 'sfp1', name: 'SFP+1', label: '', kind: 'sfp', trunk: true, speed: '10G' },
+          { id: 'sfp2', name: 'SFP+2', label: '', kind: 'sfp', vlanId: 'dmz', speed: '10G' },
+        ],
+      },
+      specs: {
+        label: 'Hardware', accent: '#d29922', columns: 1,
+        tiles: [
+          { id: 't1', icon: 'cpu', category: 'CPU', value: 'Ryzen 9 9900X', detail: '12 cores · 24 threads' },
+          { id: 't2', icon: 'memorystick', category: 'Memory', value: '64 GB DDR5', detail: '' },
+          { id: 't3', icon: 'harddrive', category: 'SSD', value: 'Samsung 980 500 GB', detail: 'NVMe · Proxmox OS' },
+        ],
+      },
+      service: { label: 'Сервис', subtitle: '', icon: 'si:docker', url: 'app.example.com', badge: 'CT 100', badgeSub: '.100', vlanId: 'dmz', items: [] },
+      table: {
+        label: 'Open to the internet', subtitle: 'port forwards',
+        rows: [
+          { id: 'r1', key: '80, 443', title: 'Traefik', note: 'every *.example.com site', tags: 'TCP, UDP' },
+          { id: 'r2', key: '51820', title: 'WireGuard', note: 'remote access VPN', tags: 'UDP' },
+        ],
+      },
+      legend: { label: 'Легенда', showKinds: true, showSpeeds: true, showNetworks: false },
     };
     const isSection = type === 'section';
     const newNode: Node = {

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { NodeProps } from 'reactflow';
-import { getIconComponent } from '@/lib/canvas-icons';
+import AppIcon from '../../AppIcon';
 import { BP, alpha, useNetwork } from '@/lib/blueprint';
 import { IconTile } from '@/components/ui/icon-tile';
 import { BlueprintHandles } from './BlueprintHandles';
@@ -28,7 +28,6 @@ export interface DeviceNodeData {
 function DeviceNode({ data, selected }: NodeProps<DeviceNodeData>) {
   const network = useNetwork(data.vlanId);
   const accent = network?.color || data.accent || '#4f9cf9';
-  const Icon = getIconComponent(data.icon) ?? getIconComponent('server');
   const rows = (data.rows || []).filter((r) => r.label || r.value);
 
   return (
@@ -60,7 +59,7 @@ function DeviceNode({ data, selected }: NodeProps<DeviceNodeData>) {
           className="[--icon-tile-radius:10px]"
           style={{ color: accent }}
         >
-          {Icon && <Icon />}
+          <AppIcon value={data.icon} fallback="server" className="size-5" />
         </IconTile>
 
         <div className="min-w-0 flex-1 leading-tight">

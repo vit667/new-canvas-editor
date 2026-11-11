@@ -44,3 +44,5 @@ next-env.d.ts
 
 .cursorrules
 .cursor
+# generated brand icons (npm run icons)
+/public/brand-icons/

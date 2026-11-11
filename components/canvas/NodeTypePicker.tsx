@@ -7,9 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Server, Monitor, LayoutPanelTop, Network, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
+import { Server, Monitor, LayoutPanelTop, Network, EthernetPort, Cpu, Boxes, Table2, ListChecks, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
 
-export type PickableNodeType = 'device' | 'section' | 'networks' | 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
+export type PickableNodeType = 'device' | 'section' | 'networks' | 'switch' | 'specs' | 'service' | 'table' | 'legend' | 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
 
 const NODE_TYPE_OPTIONS = [
   {
@@ -38,6 +38,51 @@ const NODE_TYPE_OPTIONS = [
     bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:border-emerald-800',
     iconBg: 'bg-emerald-100 dark:bg-emerald-900',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
+  {
+    type: 'switch' as PickableNodeType,
+    label: 'Коммутатор / роутер',
+    description: 'Порты-точки подключения с цветом VLAN',
+    icon: EthernetPort,
+    bg: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 dark:border-indigo-800',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900',
+    iconColor: 'text-indigo-600 dark:text-indigo-400',
+  },
+  {
+    type: 'service' as PickableNodeType,
+    label: 'Сервис / стек',
+    description: 'Приложение или стек: иконка, CT/VM, адреса',
+    icon: Boxes,
+    bg: 'bg-violet-50 hover:bg-violet-100 border-violet-200 dark:bg-violet-950 dark:hover:bg-violet-900 dark:border-violet-800',
+    iconBg: 'bg-violet-100 dark:bg-violet-900',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+  },
+  {
+    type: 'specs' as PickableNodeType,
+    label: 'Характеристики',
+    description: 'Плитки CPU / RAM / диски / сеть',
+    icon: Cpu,
+    bg: 'bg-amber-50 hover:bg-amber-100 border-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 dark:border-amber-800',
+    iconBg: 'bg-amber-100 dark:bg-amber-900',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+  },
+  {
+    type: 'table' as PickableNodeType,
+    label: 'Таблица',
+    description: 'Порты наружу, правила, списки с бейджами',
+    icon: Table2,
+    bg: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200 dark:bg-cyan-950 dark:hover:bg-cyan-900 dark:border-cyan-800',
+    iconBg: 'bg-cyan-100 dark:bg-cyan-900',
+    iconColor: 'text-cyan-600 dark:text-cyan-400',
+  },
+  {
+    type: 'legend' as PickableNodeType,
+    label: 'Легенда',
+    description: 'Собирается сама из связей на схеме',
+    icon: ListChecks,
+    bg: 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:border-zinc-800',
+    iconBg: 'bg-zinc-100 dark:bg-zinc-900',
+    iconColor: 'text-zinc-600 dark:text-zinc-400',
   },
   {
     type: 'text' as PickableNodeType,
