@@ -121,7 +121,7 @@ function useNavGroups(): NavGroup[] {
             badgeTone: errors ? "warning" : "default",
             isActive: pathname === "/issues",
           },
-          { id: "import", label: "Импорт", icon: <Download aria-hidden="true" />, soon: true },
+          { id: "import", label: "Импорт", icon: <Download aria-hidden="true" />, href: "/import", isActive: pathname === "/import" },
         ],
       },
     ]

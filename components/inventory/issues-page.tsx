@@ -42,7 +42,7 @@ export function IssuesPage() {
   const errors = issues.filter((i) => i.level === "error").length
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-4 md:px-6 md:py-5">
+    <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:px-6 md:py-5">
       <PageHeader
         title="Проблемы"
         description="Нарушения правил реестра: пересечения, дубли, несуществующие ссылки. Ошибки блокируют правку, предупреждения — нет."
@@ -94,6 +94,6 @@ export function IssuesPage() {
           ))}
         </div>
       )}
-    </main>
+    </div>
   )
 }

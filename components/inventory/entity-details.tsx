@@ -10,13 +10,16 @@ import type { InventoryLookups } from "@/lib/inventory/views"
 import { schemeHref } from "@/lib/navigation"
 import { EditableText, EntityLink, updateEntity } from "./cells"
 
-const ATTR_LABELS: Record<string, string> = {
+export const ATTR_LABELS: Record<string, string> = {
   role: "Роль", model: "Модель", platform: "ОС / прошивка", hostname: "Hostname", serial: "Серийный №", vendor: "Производитель",
   vlanId: "VLAN", icon: "Иконка", deviceId: "Устройство", type: "Тип", speed: "Скорость", mode: "Режим",
   untaggedVlanId: "VLAN (untagged)", enabled: "Включён", order: "Порядок", address: "Адрес", dnsName: "DNS-имя",
   assignedToId: "Назначен", cidr: "CIDR", gateway: "Шлюз", vid: "VID", color: "Цвет", tag: "Метка", url: "Адрес",
   ref: "CT / VM", subtitle: "Описание", note: "Назначение", product: "Продукт", version: "Версия", provider: "Провайдер",
   aInterfaceId: "Сторона A", bInterfaceId: "Сторона B", label: "Подпись", bandwidth: "Канал", lanOnly: "Только LAN",
+  stack: "Стек", taggedVlanIds: "VLAN (tagged)", lagId: "LAG", slot: "Слот", vrfId: "VRF", listenPorts: "Слушает порты",
+  vmid: "VMID", vcpu: "vCPU", ramMb: "ОЗУ, МБ", runtime: "Среда", hypervisor: "Гипервизор", capacityGb: "Ёмкость, ГБ", usedGb: "Занято, ГБ",
+  name: "Имя", description: "Описание", interfaceId: "Интерфейс",
 }
 
 /** Карточка объекта справа от таблицы: поля, связи, где нарисован */

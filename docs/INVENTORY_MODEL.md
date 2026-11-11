@@ -182,7 +182,7 @@ interface Diagram {
 | 1 | CI-иконки, «Интернет/облако», внешние системы — **сделано** | — |
 | 2 | IPAM: дерево подсетей, занятость, свободные диапазоны, проверки §6 — **сделано**: `lib/inventory/ipam.ts`, правила в `validation.ts`, страница `/ipam` (дерево по VRF, карта адресов, следующий свободный IP и подсеть, формы с проверкой на лету). IPv6 — позже | 0 |
 | 3 | Порты: выбор свободного порта при соединении, предупреждения §6.9 — **сделано**: подсветка свободных портов при соединении, запрет второй связи в занятый порт, окно выбора порта, занятость с учётом других схем (реестр), правило `cable-compat` (`lib/inventory/ports.ts`, `port-occupancy.ts`) | 0 |
-| 4 | Импорт: Cisco, Huawei, Aruba, Palo Alto, MikroTik, ss/netstat, RVTools, Proxmox | 0, 2, 3 |
+| 4 | Импорт: Cisco, Huawei, Aruba, Palo Alto, MikroTik, ss/netstat, RVTools, Proxmox — **частично**: страница `/import`, сверка и применение (`lib/inventory/import/`), разборщики Cisco IOS/IOS-XE, Huawei VRP, MikroTik, ss/netstat, Proxmox. Осталось: Aruba AOS-CX, Palo Alto, RVTools | 0, 2, 3 |
 | 5 | Виртуализация и ПО, связи monitored/backed/managed, слои на схеме | 0 |
 | 6 | NAT, потоки, трассировка пути | 2, 4 |
 | 7 | app-shell-12 (каркас с разделами) + новый CMDB-проводник — **сделано**: меню «Проектирование / Реестр / Данные», маршруты `/schemes`, `/inventory/[раздел]`, `/issues`, таблицы разделов с фильтром по схеме и правкой в ячейке | 0 |

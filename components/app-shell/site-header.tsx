@@ -41,6 +41,7 @@ function useCrumbs(): { crumbs: Crumb[]; schemeId?: string } {
     return { crumbs: [{ label: "Реестр" }, ...(area ? [{ label: area.label }] : []), { label: section?.label ?? "Раздел" }] }
   }
   if (parts[0] === "issues") return { crumbs: [{ label: "Данные" }, { label: "Проблемы" }] }
+  if (parts[0] === "import") return { crumbs: [{ label: "Данные" }, { label: "Импорт" }] }
   if (parts[0] === "ipam") return { crumbs: [{ label: "Реестр" }, { label: "Сеть" }, { label: "IPAM" }] }
   return { crumbs: [] }
 }

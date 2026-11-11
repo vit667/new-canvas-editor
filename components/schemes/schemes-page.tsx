@@ -107,7 +107,7 @@ export function SchemesPage() {
   )
 
   return (
-    <main className="flex flex-1 flex-col gap-5 px-4 py-4 md:px-6 md:py-5">
+    <div className="flex flex-1 flex-col gap-5 px-4 py-4 md:px-6 md:py-5">
       <PageHeader
         title="Схемы"
         description="Схемы сети, стендов и сервисов. Объекты на схемах — это записи реестра: правка в одном месте видна везде."
@@ -184,6 +184,6 @@ export function SchemesPage() {
         </div>
       )}
       {dialogs}
-    </main>
+    </div>
   )
 }

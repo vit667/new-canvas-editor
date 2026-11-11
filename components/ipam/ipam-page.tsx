@@ -242,7 +242,7 @@ export function IpamPage() {
       </aside>
 
       {/* Выбранная подсеть */}
-      <main className="flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
         {!selected || !usage ? (
           <>
             <PageHeader
@@ -464,7 +464,7 @@ export function IpamPage() {
             </div>
           </>
         )}
-      </main>
+      </div>
 
       <PrefixDialog
         open={!!prefixDialog}
