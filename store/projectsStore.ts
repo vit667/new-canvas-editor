@@ -13,7 +13,11 @@ export interface CanvasProject {
   createdAt: number;
   updatedAt: number;
   viewMode: ViewMode;
+  /** Стиль холста: обычный или тёмный blueprint */
+  canvasStyle?: CanvasStyle;
 }
+
+export type CanvasStyle = 'default' | 'blueprint';
 
 interface ProjectsState {
   projects: CanvasProject[];
@@ -29,6 +33,7 @@ interface ProjectsState {
   getCurrentProject: () => CanvasProject | null;
   updateCurrentProject: (nodes: Node[], edges: Edge[]) => void;
   setViewMode: (mode: ViewMode) => void;
+  setCanvasStyle: (style: CanvasStyle) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>()(
@@ -119,6 +124,16 @@ export const useProjectsStore = create<ProjectsState>()(
           projects: state.projects.map((p) =>
             p.id === state.currentProjectId
               ? { ...p, viewMode: mode, updatedAt: Date.now() }
+              : p
+          ),
+        }));
+      },
+
+      setCanvasStyle: (canvasStyle) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === state.currentProjectId
+              ? { ...p, canvasStyle, updatedAt: Date.now() }
               : p
           ),
         }));

@@ -42,6 +42,12 @@ import RoutingRuleNode from './nodes/RoutingRuleNode';
 import RiskNode from './nodes/RiskNode';
 import NoteNode from './nodes/NoteNode';
 import CustomEdge from './edges/CustomEdge';
+import LinkEdge from './edges/LinkEdge';
+import DeviceNode from './nodes/blueprint/DeviceNode';
+import SectionNode from './nodes/blueprint/SectionNode';
+import NetworksNode from './nodes/blueprint/NetworksNode';
+import BlueprintNodeEditor, { BLUEPRINT_NODE_TYPES } from './BlueprintNodeEditor';
+import { BP, DEFAULT_NETWORKS, collectNetworks, isContainerType, useNetworksStore } from '@/lib/blueprint';
 import { NodeTypePicker, type PickableNodeType } from './NodeTypePicker';
 import EdgeEditor from './EdgeEditor';
 import { useCanvasStore } from '@/store/canvasStore';
@@ -59,10 +65,14 @@ const nodeTypes = {
   'routing-rule': RoutingRuleNode,
   risk: RiskNode,
   note: NoteNode,
+  device: DeviceNode,
+  section: SectionNode,
+  networks: NetworksNode,
 };
 
 const edgeTypes = {
   default: CustomEdge,
+  link: LinkEdge,
 };
 
 const initialNodes: Node[] = [
@@ -117,6 +127,8 @@ interface CanvasEditorProps {
   initialNodes?: Node[];
   initialEdges?: Edge[];
   onStateChange?: (nodes: Node[], edges: Edge[]) => void;
+  /** Тёмная blueprint-тема холста */
+  blueprint?: boolean;
 }
 
 // Тип контекстного меню
@@ -128,7 +140,7 @@ interface ContextMenuState {
   canvasPosition: { x: number; y: number }; // Позиция на холсте для создания элементов
 }
 
-const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(function CanvasEditorInner({ initialNodes: propInitialNodes, initialEdges: propInitialEdges, onStateChange }, ref) {
+const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(function CanvasEditorInner({ initialNodes: propInitialNodes, initialEdges: propInitialEdges, onStateChange, blueprint = false }, ref) {
   const { nodes, edges, setNodes, setEdges, addNode, updateNode: updateStoreNode, deleteNode, clearCanvas } = useCanvasStore();
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
@@ -182,7 +194,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       setNodes((currentNodes) =>
         currentNodes.map((node) => ({
           ...node,
-          zIndex: node.zIndex ?? ((node.type === 'group' || node.type === 'tracked-group') ? 1 : 10),
+          zIndex: node.zIndex ?? (isContainerType(node.type) ? 1 : 10),
         }))
       );
     }
@@ -192,6 +204,14 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       isInitializing.current = false;
     }, 100);
   }, [propInitialNodes, propInitialEdges]);
+
+  // Справочник сетей (VLAN) берётся из узлов-панелей «Сети»
+  const setNetworks = useNetworksStore((st) => st.setNetworks);
+  useEffect(() => {
+    const next = collectNetworks(nodes);
+    const current = useNetworksStore.getState().networks;
+    if (JSON.stringify(next) !== JSON.stringify(current)) setNetworks(next);
+  }, [nodes, setNetworks]);
 
   // Debug: выводим количество узлов
   useEffect(() => {
@@ -288,11 +308,11 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
   // Функция для определения, попадает ли узел в границы группы
   const findParentGroup = useCallback((node: Node, allNodes: Node[]): string | null => {
     // Не привязываем группы к группам и сами узлы к себе
-    if (node.type === 'group' || node.type === 'tracked-group') return null;
+    if (isContainerType(node.type)) return null;
     
     // Проверяем каждую группу
     for (const group of allNodes) {
-      if ((group.type !== 'group' && group.type !== 'tracked-group') || group.id === node.id) continue;
+      if (!isContainerType(group.type) || group.id === node.id) continue;
       
       const groupWidth = typeof group.style?.width === 'number' ? group.style.width : 300;
       const groupHeight = typeof group.style?.height === 'number' ? group.style.height : 200;
@@ -328,7 +348,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         // Обрабатываем изменения для прилипания узлов к группам
         updatedNodes = updatedNodes.map((node) => {
           // Пропускаем группы (но обрабатываем их позиции для дочерних узлов)
-          if (node.type === 'group') return node;
+          if (isContainerType(node.type)) return node;
           
           // Если узел уже привязан к группе, проверяем, что группа все еще существует
           if (node.parentId) {
@@ -418,6 +438,20 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
 
   const onConnect = useCallback(
     (params: Connection) => {
+      if (blueprint) {
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...params,
+              type: 'link',
+              zIndex: 10,
+              data: { routing: 'step', kind: 'access', speed: '1G' },
+            },
+            eds
+          )
+        );
+        return;
+      }
       setEdges((eds) => {
         const newEdges = addEdge({ 
           ...params,
@@ -446,7 +480,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
         }));
       });
     },
-    [setEdges]
+    [setEdges, blueprint]
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -497,13 +531,18 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
       risk: { label: 'Новый риск', probability: '', impact: '', severity: 'medium', mitigation: '', color: 'default' },
       group: { label: 'Новая группа', itemCount: 0, groupType: '', color: 'default' },
       note: { label: '', content: 'Новая заметка...', color: 'default' },
+      device: { label: 'Устройство', role: 'server', icon: 'server', model: '', ip: '10.0.10.10', hostname: 'host.internal', os: '', vlanId: 'lan' },
+      section: { label: 'Секция', role: 'server', icon: 'server', subtitle: '', vlanId: '', accent: '#8b96a5', variant: 'solid' },
+      networks: { label: 'Сети', networks: DEFAULT_NETWORKS },
     };
+    const isSection = type === 'section';
     const newNode: Node = {
       id: `${Date.now()}`,
       type,
       position: getPositionOrRandom(pendingNodePosition || undefined),
       data: defaultDataMap[type] || { label: 'Новый узел', color: 'default' },
-      zIndex: 10,
+      zIndex: isSection ? 1 : 10,
+      ...(isSection ? { style: { width: 520, height: 320 }, dragHandle: '.bp-section-drag' } : {}),
     };
     addNode(newNode);
     setIsNodeTypePickerOpen(false);
@@ -975,7 +1014,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
     setTimeout(() => {
       // Используем toCanvas для лучшего контроля над экспортом
       toCanvas(viewport, {
-        backgroundColor: '#ffffff',
+        backgroundColor: blueprint ? BP.bg : '#ffffff',
         width: imageWidth,
         height: imageHeight,
         pixelRatio: scale,
@@ -1012,7 +1051,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
 
             if (finalCtx) {
               // Заполняем белым фоном
-              finalCtx.fillStyle = '#ffffff';
+              finalCtx.fillStyle = blueprint ? BP.bg : '#ffffff';
               finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
               // Рисуем оригинальный контент поверх
@@ -1184,7 +1223,7 @@ const CanvasEditorInner = React.forwardRef<CanvasEditorRef, CanvasEditorProps>(f
           });
         });
     }, 100);
-  }, [nodes]);
+  }, [nodes, edges, blueprint]);
 
   const handleExportHTML = useCallback(() => {
     const reactFlowWrapper = document.querySelector('.react-flow') as HTMLElement;
@@ -1680,7 +1719,7 @@ svg.react-flow__edges {
       // Нормализуем данные при импорте
       const normalizedNodes = data.nodes.map((node: Node) => ({
         ...node,
-        zIndex: node.zIndex ?? ((node.type === 'group' || node.type === 'tracked-group') ? 1 : 10),
+        zIndex: node.zIndex ?? (isContainerType(node.type) ? 1 : 10),
       }));
       
       const normalizedEdges = data.edges.map((edge: Edge) => ({
@@ -1699,7 +1738,7 @@ svg.react-flow__edges {
   }, [setNodes, setEdges, importError]);
 
   return (
-    <div className="w-full h-full flex flex-col" ref={containerRef} onMouseMove={onMouseMove}>
+    <div className={`w-full h-full flex flex-col${blueprint ? ' bp-canvas' : ''}`} ref={containerRef} onMouseMove={onMouseMove}>
       <div className="flex-1">
         <ReactFlow
           nodes={nodes}
@@ -1723,8 +1762,16 @@ svg.react-flow__edges {
           fitView
         >
           <Controls />
-          <MiniMap />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          <MiniMap
+            {...(blueprint
+              ? { maskColor: 'rgba(13,17,23,0.7)', nodeColor: '#2b3542', style: { background: BP.panel } }
+              : {})}
+          />
+          {blueprint ? (
+            <Background variant={BackgroundVariant.Dots} gap={16} size={1.2} color={BP.dot} />
+          ) : (
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          )}
         </ReactFlow>
       </div>
 
@@ -1803,7 +1850,16 @@ svg.react-flow__edges {
         onSelect={handleNodeTypeSelect}
       />
 
-      {selectedNode && (
+      {selectedNode && BLUEPRINT_NODE_TYPES.includes(selectedNode.type || '') && (
+        <BlueprintNodeEditor
+          node={selectedNode}
+          isOpen={isEditorOpen}
+          onClose={() => setIsEditorOpen(false)}
+          onSave={updateNode}
+        />
+      )}
+
+      {selectedNode && !BLUEPRINT_NODE_TYPES.includes(selectedNode.type || '') && (
         <NodeEditor
           node={selectedNode}
           isOpen={isEditorOpen}

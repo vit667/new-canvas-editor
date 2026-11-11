@@ -7,11 +7,38 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Server, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
+import { Server, Monitor, LayoutPanelTop, Network, User, ShoppingBag, BarChart2, GitBranch, StickyNote, AlertTriangle, Folder } from 'lucide-react'
 
-export type PickableNodeType = 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
+export type PickableNodeType = 'device' | 'section' | 'networks' | 'text' | 'person' | 'product-card' | 'stat-card' | 'routing-rule' | 'note' | 'risk' | 'group'
 
 const NODE_TYPE_OPTIONS = [
+  {
+    type: 'device' as PickableNodeType,
+    label: 'Устройство',
+    description: 'Карточка: имя, роль, IP, hostname, ОС, VLAN',
+    icon: Monitor,
+    bg: 'bg-sky-50 hover:bg-sky-100 border-sky-200 dark:bg-sky-950 dark:hover:bg-sky-900 dark:border-sky-800',
+    iconBg: 'bg-sky-100 dark:bg-sky-900',
+    iconColor: 'text-sky-600 dark:text-sky-400',
+  },
+  {
+    type: 'section' as PickableNodeType,
+    label: 'Секция',
+    description: 'Контейнер-сервер или зона с меткой VLAN',
+    icon: LayoutPanelTop,
+    bg: 'bg-slate-50 hover:bg-slate-100 border-slate-300 border-dashed dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-600',
+    iconBg: 'bg-slate-200 dark:bg-slate-800',
+    iconColor: 'text-slate-700 dark:text-slate-300',
+  },
+  {
+    type: 'networks' as PickableNodeType,
+    label: 'Сети (VLAN)',
+    description: 'Справочник сетей: цвета для связей и IP',
+    icon: Network,
+    bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:border-emerald-800',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
   {
     type: 'text' as PickableNodeType,
     label: 'Система',
@@ -95,7 +122,7 @@ interface NodeTypePickerProps {
 export function NodeTypePicker({ isOpen, onClose, onSelect }: NodeTypePickerProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Выберите тип узла</DialogTitle>
         </DialogHeader>

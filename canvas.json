@@ -1,0 +1,303 @@
+{
+  "nodes": [
+    {
+      "id": "nets",
+      "type": "networks",
+      "position": {
+        "x": -360,
+        "y": 0
+      },
+      "data": {
+        "label": "Networks",
+        "networks": [
+          {
+            "id": "lan",
+            "tag": "VLAN 10",
+            "name": "LAN",
+            "cidr": "10.0.10.0/24",
+            "description": "trusted · may manage the other VLANs",
+            "color": "#4f9cf9"
+          },
+          {
+            "id": "dmz",
+            "tag": "VLAN 20",
+            "name": "DMZ",
+            "cidr": "10.0.20.0/24",
+            "description": "services · no access to LAN",
+            "color": "#f0883e"
+          },
+          {
+            "id": "guest",
+            "tag": "VLAN 30",
+            "name": "GUEST",
+            "cidr": "10.0.30.0/24",
+            "description": "internet only",
+            "color": "#a371f7"
+          },
+          {
+            "id": "iot",
+            "tag": "VLAN 40",
+            "name": "IoT",
+            "cidr": "10.0.40.0/24",
+            "description": "internet only · HA gets a few holes",
+            "color": "#3fb950"
+          },
+          {
+            "id": "mgmt",
+            "tag": "VLAN 99",
+            "name": "MGMT",
+            "cidr": "10.0.99.0/24",
+            "description": "admin interfaces",
+            "color": "#d29922"
+          },
+          {
+            "id": "wan",
+            "tag": "Fritzbox",
+            "name": "WAN",
+            "cidr": "192.168.178.0/24",
+            "description": "untrusted uplink",
+            "color": "#f85149"
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "fw",
+      "type": "device",
+      "position": {
+        "x": 360,
+        "y": 0
+      },
+      "data": {
+        "label": "OPNsense",
+        "role": "router/firewall",
+        "icon": "shield",
+        "model": "Lenovo thin client",
+        "ip": "10.0.99.1",
+        "hostname": "opnsense.internal",
+        "os": "OPNsense 26.7",
+        "vlanId": "mgmt"
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "sw",
+      "type": "device",
+      "position": {
+        "x": 360,
+        "y": 220
+      },
+      "data": {
+        "label": "MikroTik",
+        "role": "switch",
+        "icon": "network",
+        "model": "CRS310-8G+2S+",
+        "ip": "10.0.99.2",
+        "hostname": "mikrotik.internal",
+        "os": "RouterOS 7.20",
+        "vlanId": "mgmt"
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "pc",
+      "type": "device",
+      "position": {
+        "x": 0,
+        "y": 460
+      },
+      "data": {
+        "label": "MADCAT",
+        "role": "workstation",
+        "icon": "monitor",
+        "model": "Gaming PC",
+        "ip": "10.0.10.30",
+        "hostname": "madcat.internal",
+        "os": "CachyOS + Windows 11",
+        "vlanId": "lan"
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "ap",
+      "type": "device",
+      "position": {
+        "x": 360,
+        "y": 460
+      },
+      "data": {
+        "label": "U7 Lite",
+        "role": "access point",
+        "icon": "wifi",
+        "model": "UniFi U7 Lite · Wi-Fi 7",
+        "ip": "10.0.99.62",
+        "hostname": "u7lite.internal",
+        "vlanId": "mgmt",
+        "rows": [
+          {
+            "id": "a",
+            "label": "Home",
+            "value": "VLAN 10 · LAN"
+          },
+          {
+            "id": "b",
+            "label": "Guest",
+            "value": "VLAN 30 · GUEST"
+          },
+          {
+            "id": "c",
+            "label": "IoT",
+            "value": "VLAN 40 · IoT"
+          }
+        ]
+      },
+      "zIndex": 10
+    },
+    {
+      "id": "srv",
+      "type": "section",
+      "position": {
+        "x": 0,
+        "y": 720
+      },
+      "data": {
+        "label": "terra",
+        "role": "server",
+        "icon": "server",
+        "subtitle": "Proxmox Server",
+        "ip": "10.0.10.20",
+        "hostname": "terra.internal",
+        "vlanId": "dmz",
+        "variant": "solid"
+      },
+      "zIndex": 1,
+      "style": {
+        "width": 760,
+        "height": 300
+      },
+      "dragHandle": ".bp-section-drag"
+    },
+    {
+      "id": "jf",
+      "type": "device",
+      "position": {
+        "x": 30,
+        "y": 90
+      },
+      "data": {
+        "label": "Jellyfin",
+        "role": "media",
+        "icon": "monitor",
+        "model": "CT 152 · streams",
+        "ip": "10.0.20.152",
+        "hostname": "jellyfin.internal",
+        "vlanId": "dmz"
+      },
+      "zIndex": 10,
+      "parentId": "srv",
+      "extent": "parent"
+    },
+    {
+      "id": "ha",
+      "type": "device",
+      "position": {
+        "x": 400,
+        "y": 90
+      },
+      "data": {
+        "label": "Home Assistant",
+        "role": "VM 106",
+        "icon": "cpu",
+        "model": "2 vCPU · 4 GB",
+        "ip": "10.0.40.2",
+        "hostname": "ha.internal",
+        "vlanId": "iot"
+      },
+      "zIndex": 10,
+      "parentId": "srv",
+      "extent": "parent"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "fw",
+      "sourceHandle": "bottom-source",
+      "target": "sw",
+      "targetHandle": "top-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "trunk",
+        "speed": "2.5G",
+        "label": "LACP · dual 2.5G"
+      }
+    },
+    {
+      "id": "e2",
+      "source": "sw",
+      "sourceHandle": "left-source",
+      "target": "pc",
+      "targetHandle": "top-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "access",
+        "speed": "10G",
+        "vlanId": "lan",
+        "showSpeedLabel": true
+      }
+    },
+    {
+      "id": "e3",
+      "source": "sw",
+      "sourceHandle": "bottom-source",
+      "target": "ap",
+      "targetHandle": "top-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "trunk",
+        "speed": "2.5G",
+        "showSpeedLabel": true
+      }
+    },
+    {
+      "id": "e4",
+      "source": "sw",
+      "sourceHandle": "right-source",
+      "target": "srv",
+      "targetHandle": "top-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "access",
+        "speed": "10G",
+        "vlanId": "dmz",
+        "showSpeedLabel": true,
+        "animated": true
+      }
+    },
+    {
+      "id": "e5",
+      "source": "pc",
+      "sourceHandle": "bottom-source",
+      "target": "srv",
+      "targetHandle": "left-target",
+      "type": "link",
+      "zIndex": 10,
+      "data": {
+        "routing": "step",
+        "kind": "kvm",
+        "label": "HDMI + USB console"
+      }
+    }
+  ],
+  "version": "1.0",
+  "exportedAt": "2026-11-11T09:07:33.233875+00:00"
+}

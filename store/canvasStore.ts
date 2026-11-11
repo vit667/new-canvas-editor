@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Node, Edge } from 'reactflow';
+import { isContainerType } from '@/lib/blueprint';
 
 interface CanvasState {
   nodes: Node[];
@@ -23,13 +24,13 @@ export const useCanvasStore = create<CanvasState>()(
         const normalizedNodes = (typeof nodes === 'function' ? nodes([]) : nodes).map((node) => ({
           ...node,
           // Устанавливаем zIndex если его нет: узлы выше групп
-          zIndex: node.zIndex ?? (node.type === 'group' ? 1 : 10),
+          zIndex: node.zIndex ?? (isContainerType(node.type) ? 1 : 10),
         }));
         set((state) => ({
           nodes: typeof nodes === 'function' 
             ? nodes(state.nodes).map((node) => ({
                 ...node,
-                zIndex: node.zIndex ?? (node.type === 'group' ? 1 : 10),
+                zIndex: node.zIndex ?? (isContainerType(node.type) ? 1 : 10),
               }))
             : normalizedNodes,
         }));
@@ -55,7 +56,7 @@ export const useCanvasStore = create<CanvasState>()(
         // Устанавливаем zIndex: узлы выше групп
         const nodeWithZIndex = {
           ...node,
-          zIndex: node.type === 'group' ? 1 : 10,
+          zIndex: isContainerType(node.type) ? 1 : 10,
         };
         set((state) => ({
           nodes: [...state.nodes, nodeWithZIndex],

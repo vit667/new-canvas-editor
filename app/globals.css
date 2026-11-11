@@ -271,3 +271,81 @@
 .react-flow__pane.connecting .react-flow__handle {
   opacity: 0.6 !important;
 }
+
+/* ===== Blueprint: тёмные инфраструктурные схемы ===== */
+.bp-mono {
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-feature-settings: "zero" 1;
+}
+
+.bp-canvas .react-flow {
+  background: #0d1117;
+}
+
+.bp-canvas .react-flow__controls {
+  box-shadow: none;
+  border: 1px solid #2b3542;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bp-canvas .react-flow__controls-button {
+  background: #151b23;
+  border-bottom-color: #2b3542;
+  fill: #c9d1d9;
+}
+
+.bp-canvas .react-flow__controls-button:hover {
+  background: #1f2732;
+}
+
+.bp-canvas .react-flow__minimap {
+  border: 1px solid #2b3542;
+  border-radius: 8px;
+}
+
+.bp-canvas .react-flow__attribution {
+  background: transparent;
+}
+
+.react-flow__node-device,
+.react-flow__node-networks {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Секция: тело «прозрачно» для мыши — под ним двигается холст и работают вложенные узлы.
+   Тянется за заголовок (dragHandle .bp-section-drag) */
+.react-flow .react-flow__node.react-flow__node-section {
+  pointer-events: none !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.react-flow__node-section .bp-section-drag,
+.react-flow__node-section .react-flow__handle,
+.react-flow__node-section .react-flow__resize-control {
+  pointer-events: all !important;
+}
+
+.react-flow__edge-link .bp-link-path {
+  transition: filter 0.15s;
+}
+
+.bp-flow {
+  stroke-dasharray: 4 14;
+  animation: bp-flow 1.2s linear infinite;
+}
+
+@keyframes bp-flow {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.bp-canvas .react-flow__handle,
+.react-flow__handle.bp-handle {
+  border-color: #0d1117 !important;
+}

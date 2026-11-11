@@ -8,6 +8,20 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  KIND_OPTIONS,
+  ROUTING_OPTIONS,
+  SPEED_OPTIONS,
+  useNetworksStore,
+  type LinkEdgeData,
+  type LinkKind,
+  type LinkRouting,
+  type LinkSpeed,
+} from '@/lib/blueprint';
+
+const selectClass =
+  'w-full px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 interface EdgeEditorProps {
   edge: Edge | null;
@@ -35,6 +49,16 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
   const [markerEnd, setMarkerEnd] = useState<MarkerOption>('arrowclosed' as MarkerOption);
   const [lineStyle, setLineStyle] = useState<LineStyle>('solid');
   const [edgeColor, setEdgeColor] = useState<keyof typeof edgeColors>('default');
+  // Сетевая связь (blueprint)
+  const networks = useNetworksStore((st) => st.networks);
+  const [isLink, setIsLink] = useState(false);
+  const [routing, setRouting] = useState<LinkRouting>('step');
+  const [kind, setKind] = useState<LinkKind>('access');
+  const [speed, setSpeed] = useState<LinkSpeed | ''>('');
+  const [vlanId, setVlanId] = useState('');
+  const [label, setLabel] = useState('');
+  const [showSpeedLabel, setShowSpeedLabel] = useState(false);
+  const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
     if (edge) {
@@ -68,6 +92,16 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
       const stroke = edge.style?.stroke;
       const colorKey = Object.entries(edgeColors).find(([_, value]) => value === stroke)?.[0] as keyof typeof edgeColors;
       setEdgeColor(colorKey || 'default');
+
+      const d = (edge.data || {}) as LinkEdgeData;
+      setIsLink(edge.type === 'link');
+      setRouting(d.routing || 'step');
+      setKind(d.kind || 'access');
+      setSpeed(d.speed || '');
+      setVlanId(d.vlanId || '');
+      setLabel(d.label || '');
+      setShowSpeedLabel(!!d.showSpeedLabel);
+      setAnimated(!!d.animated);
     }
   }, [edge]);
 
@@ -77,6 +111,7 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
     const color = edgeColors[edgeColor];
     
     const updates: Partial<Edge> = {
+      type: isLink ? 'link' : 'default',
       markerStart: markerStart === 'none' ? undefined : {
         type: markerStart,
         width: 10,
@@ -98,6 +133,17 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
         ...edge.data,
         showStartDot: markerStart === 'none',
         showEndDot: markerEnd === 'none',
+        ...(isLink
+          ? {
+              routing,
+              kind,
+              speed: speed || undefined,
+              vlanId: vlanId || undefined,
+              label: label || undefined,
+              showSpeedLabel,
+              animated,
+            }
+          : {}),
       },
     };
 
@@ -109,12 +155,73 @@ export default function EdgeEditor({ edge, isOpen, onClose, onUpdate }: EdgeEdit
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Настройки связи</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Сетевая связь */}
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={isLink} onChange={(e) => setIsLink(e.target.checked)} />
+            Сетевая связь (VLAN, скорость, ортогональные линии)
+          </label>
+
+          {isLink && (
+            <div className="space-y-3 rounded-md border p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Тип</Label>
+                  <select value={kind} onChange={(e) => setKind(e.target.value as LinkKind)} className={selectClass}>
+                    {KIND_OPTIONS.map((k) => (
+                      <option key={k.value} value={k.value} title={k.hint}>{k.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Скорость</Label>
+                  <select value={speed} onChange={(e) => setSpeed(e.target.value as LinkSpeed | '')} className={selectClass}>
+                    <option value="">—</option>
+                    {SPEED_OPTIONS.map((sp) => (
+                      <option key={sp.value} value={sp.value}>{sp.value}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Сеть (VLAN)</Label>
+                  <select value={vlanId} onChange={(e) => setVlanId(e.target.value)} className={selectClass}>
+                    <option value="">— цвет вручную —</option>
+                    {networks.map((n) => (
+                      <option key={n.id} value={n.id}>{n.tag} · {n.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Линия</Label>
+                  <select value={routing} onChange={(e) => setRouting(e.target.value as LinkRouting)} className={selectClass}>
+                    {ROUTING_OPTIONS.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Подпись</Label>
+                <Input value={label} placeholder="LACP · dual 2.5G" onChange={(e) => setLabel(e.target.value)} />
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={showSpeedLabel} onChange={(e) => setShowSpeedLabel(e.target.checked)} />
+                  Показывать скорость
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={animated} onChange={(e) => setAnimated(e.target.checked)} />
+                  Анимация трафика
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Стрелка в начале */}
           <div className="space-y-2">
             <Label>Стрелка в начале</Label>

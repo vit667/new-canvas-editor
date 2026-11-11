@@ -113,6 +113,7 @@ export default function CanvasWithProjects() {
         initialNodes={currentProject.nodes}
         initialEdges={currentProject.edges}
         onStateChange={handleStateChange}
+        blueprint={currentProject.canvasStyle === 'blueprint'}
       />
     )
   }

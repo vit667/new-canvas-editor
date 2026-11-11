@@ -1,6 +1,6 @@
 "use client"
 
-import { PanelLeftIcon, Plus, Edit, Copy, Trash2, Download, Upload, RotateCcw, Layers, Workflow, Table2, Network, Group, ArrowLeftRight, Server, Image, FileCode, Database } from "lucide-react"
+import { PanelLeftIcon, Plus, Edit, Copy, Trash2, Download, Upload, RotateCcw, Layers, Workflow, Table2, Network, Group, ArrowLeftRight, Server, Image, FileCode, Database, Grid3x3 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -13,7 +13,7 @@ import { useProjectsStore } from "@/store/projectsStore"
 export function CanvasSiteHeader() {
   const { toggleSidebar } = useSidebar()
   const { selectedNode, selectedEdge, nodesCount, isConnected, actions } = useCanvasToolbarStore()
-  const { getCurrentProject, setViewMode } = useProjectsStore()
+  const { getCurrentProject, setViewMode, setCanvasStyle } = useProjectsStore()
   const currentProject = getCurrentProject()
 
   return (
@@ -116,6 +116,17 @@ export function CanvasSiteHeader() {
                 </Button>
               </>
             )}
+
+            <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
+            <Button
+              onClick={() => setCanvasStyle(currentProject.canvasStyle === 'blueprint' ? 'default' : 'blueprint')}
+              size="icon"
+              variant={currentProject.canvasStyle === 'blueprint' ? 'default' : 'ghost'}
+              title="Тёмная схема (blueprint)"
+              className="h-7 w-7"
+            >
+              <Grid3x3 className="h-3.5 w-3.5" />
+            </Button>
 
             <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4" />
             <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
